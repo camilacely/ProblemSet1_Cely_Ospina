@@ -86,8 +86,12 @@ geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih1
 # 2. Data Cleaning
 #####################
 
+#debe ser solo para mayores de 18 aÃ±os
+GEIH<-geih[!(geih$age<18),]
+df2
+
 #ELECCION DE X
-#Elección de variables significativas (fijarnos en los talleres del año pasado)
+#Elecci?n de variables significativas (fijarnos en los talleres del a?o pasado)
 #Primero buscar las variables y aislarlas
 #raza, genero, edad
 
@@ -95,15 +99,26 @@ geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih1
 #ejemplo<-geih$p6760
 #raza<-geih$xxxxxx   
 
+edad<-geih$age
+educ<-geih$maxEducLevel
+#Revisar en quÃ© esta medido, deberÃ­a ser aÃ±os, creo que esa la creo ignacio
+
+gen<-geih$sex
+
+Exp<-geih$(age-maxEducLevel)-5	
+#eperiencia potencial (esta la usamos en el intersemestral): En la literatura se ha utilizado como proxy de 
+#la experiencia la experiencia potencial. Esta nace de restarle a la edad de la persona los aÃ±os que ha estudiado 
+#y, ademÃ¡s, cinco (5) aÃ±os â€“pues en sus aÃ±os de primera infancia ni estudiÃ³ ni trabajÃ³.
+##No he logrado crearla
 
 #Segundo, verificar en esas variables si hay missings
 
-college<-geih$college
+is.na(geih$educ)
 #ver como se encuentran los missings
 #analizar caso a caso (por variable) como los vamos a manejar
 
 
-#Tercero, estadísticas descriptivas, tablas y figuras
+#Tercero, estad?sticas descriptivas, tablas y figuras
 
 
 
@@ -119,7 +134,7 @@ college<-geih$college
 # 3. Age-earnings profile
 #####################
 
-#ELECCIÓN DE Y (INCOME)
+#ELECCI?N DE Y (INCOME)
 
 #justificarla
 
@@ -128,7 +143,7 @@ college<-geih$college
 #que tan bien ajusta sin partir la muestra
 #graficar
 
-#usar bootstrap (revisar bien la intuición)
+#usar bootstrap (revisar bien la intuici?n)
 
 
 
@@ -163,7 +178,7 @@ college<-geih$college
 #####################
 
 
-# a. dos muestras (train y test) - plantear modelos cada vez más complejos (5) e irlos comparando
+# a. dos muestras (train y test) - plantear modelos cada vez m?s complejos (5) e irlos comparando
 
 #para el peor modelo, buscar outliers
 
