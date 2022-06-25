@@ -78,43 +78,70 @@ temp<-read_html(url10)%>%html_table()
 GEIH10 <- rbind (GEIH10, temp)
 geih10 <- rename(GEIH10, X1.3218="X1.3217")
 
-geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih10)
+geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih10) #31.177 observaciones
 
+#load("geih.rdata")
 
 
 #####################
 # 2. Data Cleaning
 #####################
 
-#debe ser solo para mayores de 18 años
-GEIH<-geih[!(geih$age<18),]
-df2
-
 #ELECCION DE X
-#Elecci?n de variables significativas (fijarnos en los talleres del a?o pasado)
-#Primero buscar las variables y aislarlas
-#raza, genero, edad
-
-#year<-US90$year
-#ejemplo<-geih$p6760
-#raza<-geih$xxxxxx   
 
 edad<-geih$age
 educ<-geih$maxEducLevel
-#Revisar en qué esta medido, debería ser años, creo que esa la creo ignacio
-
 gen<-geih$sex
 
-Exp<-geih$(age-maxEducLevel)-5	
-#eperiencia potencial (esta la usamos en el intersemestral): En la literatura se ha utilizado como proxy de 
-#la experiencia la experiencia potencial. Esta nace de restarle a la edad de la persona los años que ha estudiado 
-#y, además, cinco (5) años –pues en sus años de primera infancia ni estudió ni trabajó.
-##No he logrado crearla
+#Experiencia potencial
+#En la literatura se ha utilizado como proxy de la experiencia la experiencia potencial.
+#Esta nace de restarla a la edad de la persona, los a�os que ha estudiado 
+#Y adem�s cinco a�os adicionales, pues en su primera infancia ni estudia ni trabaja
 
-#Segundo, verificar en esas variables si hay missings
+#maxEducLevel	1	None
+#maxEducLevel	2	preschool
+#maxEducLevel	3	primary incomplete (1-4)
+#maxEducLevel	4	primary complete (5)
+#maxEducLevel	5	secondary incomplete (6-10)
+#maxEducLevel	6	secondary complete (11)
+#maxEducLevel	7	terciary
+#maxEducLevel	9	N/A
 
-is.na(geih$educ)
+educ_time<-case_when(educ <= 1 ~ 0,
+                     educ <= 2 ~ 1,
+                     educ <= 3 ~ 2.5,
+                     educ <= 4 ~ 5,
+                     educ <= 5 ~ 7.5,
+                     educ <= 6 ~ 12,
+                     educ <= 7 ~ 17,
+                     educ <= 9 ~ 0,)
+  
+exp_potencial<-edad-educ_time-5
+
+
+#Focus on individuals older than eighteen
+geih18<-geih[!(geih$age<18),] #24.568 observaciones
+
+#Focus on employed individuals
+oc<-geih18$oc
+geih18e<-geih18[!(geih18$oc>0),] #8.026 observaciones
+
+
+#Missing values analysis
+which(is.na(geih$p6100)) ##Pendiente
+
+
+
+
+
+#Verificar en esas variables si hay missings
+
+is.na(geih$estrato1)
+
+
+
 #ver como se encuentran los missings
+
 #analizar caso a caso (por variable) como los vamos a manejar
 
 
