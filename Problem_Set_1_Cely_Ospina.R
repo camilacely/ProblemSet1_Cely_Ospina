@@ -125,7 +125,7 @@ educ_time<-case_when(educ <= 1 ~ 0,
                      educ <= 5 ~ 7.5,
                      educ <= 6 ~ 12,
                      educ <= 7 ~ 17,
-                     educ <= 9 ~ 0,)
+                     educ <= 9 ~ 0,) ##Nota, pendiente usar esto para sacar promedios e imputar valores a los que reportan ingresos de cero
   
 exp_potencial<-edad-educ_time-5
 
@@ -162,6 +162,7 @@ is.na(exp_potencial)
 sum(is.na(exp_potencial)) #Como esta variable depende de edad y de maxEducLevel, tiene 1 missing value
 
 #Nota: (Considero que al tener un único missing value, por ahora podemos no hacer nada al respecto porque no creo que esa única observación afecte los resultados)
+
 
 
 
