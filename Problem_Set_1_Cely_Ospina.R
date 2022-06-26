@@ -16,6 +16,7 @@ library(tidyverse)
 library(rvest)
 library(dplyr)
 library(skimr)
+library(ggplot2)
 
 #Set
 
@@ -97,6 +98,7 @@ geih18<-geih[!(geih$age<18),] #24.568 observaciones
 oc<-geih18$ocu
 geih18e<-geih18[!(geih18$ocu<1),] #16.542 observaciones #ocu = 1 if occupied, 0 otherwise
 
+#Base final elegida= geih18e
 
 #ELECCION DE VARIABLES EXPLICATIVAS RELEVANTES (X)
 
@@ -195,34 +197,117 @@ ggplot(data = subset , mapping = aes(x = age , y = age))+
 # 3. Age-earnings profile
 #####################
 
-#ELECCI?N DE Y (INCOME) #SARA puedes ver cu?l variable usamos en el taller del a?o pasado? Yo propongo impa
+#ELECCION DE Y (INCOME) 
 
+summary(geih18e$ingtot) #El 75% de los encuestados gana menos de 1'723.000, sin embargo el promedio es de 1'769.000, por lo cual
+#podemos concluir que el 25% de mayores ingresos está arrastrando ese promedio
 
-summary(geih18e$igtot)
-ing<-geih18e$ingtot #esto es para tener el script, si algo cambiamos la variable si se requiere
+ing<-geih18e$ingtot 
 
-#justificaciÃ³n: Se escoge la variable ingtot pues estÃ¡ teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que deberÃ­a tener de acuerdo con las caracterÃ­sticas observadas.  
-#Se asume que el DANE hace un ejercicio confiable en la imputaciÃ³n al ser una fuente confiable. 
+#Justificacion: Se escoge la variable ingtot pues esta teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que deberia tener de acuerdo con las caracteristicas observadas.  
+#Se asume que el DANE hace un ejercicio confiable en la imputacion al ser una fuente confiable. 
 
 
 #Correr OLS de income y age
 
 edad2<-edad^2
 
-ols1<-lm(ing~edad+edad2) #aqu? lo puse con ing pero probablemente deberiamos crear el logaritmo del ingreso
+ols1p<-lm(geih18eb$ingtot~geih18eb$age+geih18eb$age2)
+ols1<-lm(ing~edad+edad2) 
 ols1
+summary(ols1) #R^2 0.017
+
+#Por cada año adicional de vida, las personas ganan en promedio 91.000 pesos adicionales
+#Edad^2 tiene coeficiente negativo, por lo cual sabemos que esta función no es lineal sino decreciente
+
+resid1<-resid(ols1)
+plot(edad,resid1)
+
+ggplot(data = geih18e , mapping = aes(x = age , y = resid1))+
+  geom_point(col = "red" , size = 0.5)
+
+fit1<-fitted(ols1)
+par(mfrow=c(2,2))
+plot(ols1)
+
+ggplot(data = geih18e , mapping = aes(x = age , y = ingtot))+
+  geom_point(col = "red" , size = 0.5)
+
+ggplot(data = geih18e , mapping = aes(x = age , y = ingtot))+
+  geom_point(col = "red" , size = 0.5) + stat_smooth(method= "lm", col="red")
+
 
 #que tan bien ajusta sin partir la muestra
 
 #graficar
 
-#usar bootstrap (revisar bien la intuici?n)
-#para esto, est? el c?digo en las diapositivas de Semana 2 W2_01_Uncertainty
 
 
 
 
 
+#Bootstrap= resample from the sample
+
+#Manual
+
+require("stargazer")
+stargazer(ols1)
+
+set.seed(123)
+length(geih18e$age)
+R<-1000 #num de repeticiones
+
+eta_mod1<-rep(0,R) #vector de ceros de numero R
+
+geih18eb<-geih18e #No quiero modificar la base original entonces le creo una copia
+geih18eb$age2<-geih18eb$age^2 #Aquí si meto age^2
+
+for(i in 1:R){
+  geih_sample<-sample_frac(geih18eb,size=1,replace=TRUE) #muestra del mismo tamaño que la original - con reemplazo
+  f<-lm(ingtot~age+age2,geih_sample)
+  coefs<-f$coefficients #agarrame los coeficientes de f, o sea de la reg lineal
+  eta_mod1[i]<-coefs[2] #irlos reemplazando en mi vector de ceros, y el 2 corresponde al coeficiente que nos interesa, obviamente ese 2 depende del orden en que uno escribió la regresión
+  
+}
+
+plot(hist(eta_mod1)) #centrado alrededor de 90000 mas o menos, se nota distribución normal
+
+mean(eta_mod1) #Da 90936 y en la regresión daba 91143
+sqrt(var(eta_mod1)) #Da 12286,59 y en la regresión daba 8886,41 (error estándar - medida de incertidumbre)
+quantile(eta_mod1,c(0.025,0.975)) #intervalo de confianza al 95% sabemos que está entre 65.667 y 113.925
+
+#Boot package
+
+require("boot")
+
+eta.fn<-function(geih18eb,index){
+  coef(lm(ingtot~age+age2, data = geih18eb, subset = index))
+}
+
+
+boot(geih18eb, eta.fn, R)
+
+#Bootstrap Statistics :
+#        original      bias    std. error
+#t1* -436662.9269 429.0191126 216771.6646
+#t2*   91143.4584  60.7704062  12339.3418  #este es el que analizamos
+#t3*    -799.2612  -0.9719388    156.7125
+
+#Del paquete boot obtenemos coeficiente 91143,458 y en la regresión nos daba 91143,460 (se acerca más que de la manera manual)
+#De error estándar obtenemos 12339,34 y en la regresión daba 8886,41 
+
+
+#Peak age= derivar e igualar a cero, construir los intervalos de confianza a partir de los errores estándares
+# CI=[coef???1.96×SE,coef+1.96×SE] #CI: confidence intervals #SE: standard error
+
+#Plot predict
+geih_ig<-geih18e
+geih_ig<-data.frame(age=runif(30,18,80))
+geih_ig<- geih_ig %>% mutate(age2=age^2,
+                     ingtot=rnorm(30,mean=12+0.06*age-0.001*age2))  
+reg_1<-lm(ingtot~age+age2,geih_ig)
+ggplot(geih_ig , mapping = aes(x = age , y = predict(reg_1))) +
+  geom_point(col = "red" , size = 0.5)
 
 
 
