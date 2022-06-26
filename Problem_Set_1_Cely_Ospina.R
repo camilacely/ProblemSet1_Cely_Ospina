@@ -125,7 +125,7 @@ educ_time<-case_when(educ <= 1 ~ 0,
                      educ <= 5 ~ 7.5,
                      educ <= 6 ~ 12,
                      educ <= 7 ~ 17,
-                     educ <= 9 ~ 0,)
+                     educ <= 9 ~ 0,) ##Nota, pendiente usar esto para sacar promedios e imputar valores a los que reportan ingresos de cero
   
 exp_potencial<-edad-educ_time-5
 
@@ -163,10 +163,6 @@ sum(is.na(exp_potencial)) #Como esta variable depende de edad y de maxEducLevel,
 
 #Nota: (Considero que al tener un ?nico missing value, por ahora podemos no hacer nada al respecto porque no creo que esa ?nica observaci?n afecte los resultados)
 
-
-
-#Estad?sticas descriptivas 
-
 dim(geih18e)
 str(geih18e)
 names(geih18e)
@@ -202,11 +198,12 @@ ggplot(data = subset , mapping = aes(x = age , y = age))+
 #ELECCI?N DE Y (INCOME) #SARA puedes ver cu?l variable usamos en el taller del a?o pasado? Yo propongo impa
 
 
-summary(geih18e$impa)
+summary(geih18e$igtot)
 ing<-geih18e$ingtot #esto es para tener el script, si algo cambiamos la variable si se requiere
 
 #justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
 #Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
+
 
 #Correr OLS de income y age
 
