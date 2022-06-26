@@ -106,8 +106,8 @@ gen<-geih18e$sex
 
 #Experiencia potencial
 #En la literatura se ha utilizado como proxy de la experiencia la experiencia potencial.
-#Esta nace de restarla a la edad de la persona, los años que ha estudiado 
-#Y además cinco años adicionales, pues en su primera infancia ni estudia ni trabaja
+#Esta nace de restarla a la edad de la persona, los a?os que ha estudiado 
+#Y adem?s cinco a?os adicionales, pues en su primera infancia ni estudia ni trabaja
 
 #maxEducLevel	1	None
 #maxEducLevel	2	preschool
@@ -129,11 +129,11 @@ educ_time<-case_when(educ <= 1 ~ 0,
   
 exp_potencial<-edad-educ_time-5
 
-#Notas para más adelante (revisemos) 
-#de pronto en los modelos más complejos podemos controlar por depto, ya que en las regiones los salarios son distintos
+#Notas para m?s adelante (revisemos) 
+#de pronto en los modelos m?s complejos podemos controlar por depto, ya que en las regiones los salarios son distintos
 #otra: variable "informal", por mas que una persona trabaje x horas si es de manera informal seguramente recibe menos, ver si esto se cubre con la interaccion educ--hoursWorkUsual 
 #otra: second job? hoursWorkActualSecondJob 
-#otra: P6050 es la variable que dice la relación con "jefe del hogar", ver si sacamos de acá los hijos
+#otra: P6050 es la variable que dice la relaci?n con "jefe del hogar", ver si sacamos de ac? los hijos
 #otra: ingreso por arriendos?
 #otra: controlar por oficio?
 
@@ -144,7 +144,7 @@ exp_potencial<-edad-educ_time-5
 is.na(geih18e)
 colSums(is.na(geih18e))
 colSums(is.na(geih18))>0
-colnames(geih18e)[colSums(is.na(geih18e))>0] #Aquí nos aparecen los nombres de las columnas que tienen missing values
+colnames(geih18e)[colSums(is.na(geih18e))>0] #Aqu? nos aparecen los nombres de las columnas que tienen missing values
 
 #Ahora analizando las variables que escogimos como explicativas
 #edad, educ, gen, exp_potencial
@@ -161,11 +161,11 @@ sum(is.na(geih18e$sex)) #no hay missing values
 is.na(exp_potencial) 
 sum(is.na(exp_potencial)) #Como esta variable depende de edad y de maxEducLevel, tiene 1 missing value
 
-#Nota: (Considero que al tener un único missing value, por ahora podemos no hacer nada al respecto porque no creo que esa única observación afecte los resultados)
+#Nota: (Considero que al tener un ?nico missing value, por ahora podemos no hacer nada al respecto porque no creo que esa ?nica observaci?n afecte los resultados)
 
 
 
-#Estadísticas descriptivas 
+#Estad?sticas descriptivas 
 
 dim(geih18e)
 str(geih18e)
@@ -173,25 +173,25 @@ names(geih18e)
 
 head(geih18e[,c("age","maxEducLevel","sex")])
 
-summary(geih18e$age) #el 75% de los encuestados tiene menos de 50 años
-summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categórica
-summary(educ_time) #en promedio, las personas encuestadas tienen 12,42 años de educación (secundaria completa)
+summary(geih18e$age) #el 75% de los encuestados tiene menos de 50 a?os
+summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica
+summary(educ_time) #en promedio, las personas encuestadas tienen 12,42 a?os de educaci?n (secundaria completa)
 summary(geih18e$sex) #53% de los encuestados son hombres
-summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 años de experiencia laboral
+summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
 
-summary(geih18e$impa) #Propuesta de variable Y de ingreso: impa. 248 missing values, revisar, además hay varios valores de cero y teóricamente no tenemos desempleados!
+summary(geih18e$impa) #Propuesta de variable Y de ingreso: impa. 248 missing values, revisar, adem?s hay varios valores de cero y te?ricamente no tenemos desempleados!
 
-skim(geih18e) #Esto saca estadísticas de todas las variables pero la base tiene muchas columnas, por lo cual crearé un subset
+skim(geih18e) #Esto saca estad?sticas de todas las variables pero la base tiene muchas columnas, por lo cual crear? un subset
 subset <- geih18e %>% select(age, maxEducLevel, sex)
-skim(subset) #En todo caso no dice mucho porque dos de las variables son categóricas
+skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?ricas
 
 
-#Gráficas (Pendiente! Principalmente porque debemos sacarlas contra ingreso, entonces pendiente definir la Y)
+#Gr?ficas (Pendiente! Principalmente porque debemos sacarlas contra ingreso, entonces pendiente definir la Y)
 ggplot(data = subset , mapping = aes(x = age , y = age))+
   geom_point(col = "red" , size = 0.5)
 
-#Pendiente completar pero en general es cacharrearle, ya no necesita concatenación
-#útiles: clase del 11 de junio y Intro_to_R (bloque neón)
+#Pendiente completar pero en general es cacharrearle, ya no necesita concatenaci?n
+#?tiles: clase del 11 de junio y Intro_to_R (bloque ne?n)
 
 
 
@@ -199,20 +199,20 @@ ggplot(data = subset , mapping = aes(x = age , y = age))+
 # 3. Age-earnings profile
 #####################
 
-#ELECCI?N DE Y (INCOME) #SARA puedes ver cuál variable usamos en el taller del año pasado? Yo propongo impa
+#ELECCI?N DE Y (INCOME) #SARA puedes ver cu?l variable usamos en el taller del a?o pasado? Yo propongo impa
 
 
 summary(geih18e$impa)
-ing<-geih18e$impa #esto es para tener el script, si algo cambiamos la variable si se requiere
+ing<-geih18e$ingtot #esto es para tener el script, si algo cambiamos la variable si se requiere
 
-#justificarla
-
+#justificaciÃ³n: Se escoge la variable ingtot pues estÃ¡ teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que deberÃ­a tener de acuerdo con las caracterÃ­sticas observadas.  
+#Se asume que el DANE hace un ejercicio confiable en la imputaciÃ³n al ser una fuente confiable. 
 
 #Correr OLS de income y age
 
 edad2<-edad^2
 
-ols1<-lm(ing~edad+edad2) #aquí lo puse con ing pero probablemente deberiamos crear el logaritmo del ingreso
+ols1<-lm(ing~edad+edad2) #aqu? lo puse con ing pero probablemente deberiamos crear el logaritmo del ingreso
 ols1
 
 #que tan bien ajusta sin partir la muestra
@@ -220,7 +220,7 @@ ols1
 #graficar
 
 #usar bootstrap (revisar bien la intuici?n)
-#para esto, está el código en las diapositivas de Semana 2 W2_01_Uncertainty
+#para esto, est? el c?digo en las diapositivas de Semana 2 W2_01_Uncertainty
 
 
 
@@ -245,59 +245,59 @@ ols1
 #FWL para sacar las variables de control pero teoricamente nos debe dar lo mismo
 
 ##########
-##VOY A PEGAR AQUÍ MI SCRIPT COMENTADO DE JUNIO 8 DONDE NOS EXPLICARON COMO SACAR EL FWL THEOREM
+##VOY A PEGAR AQU? MI SCRIPT COMENTADO DE JUNIO 8 DONDE NOS EXPLICARON COMO SACAR EL FWL THEOREM
 #######
 
 ggplot(db) +
   geom_point(aes(x=x,y=y))
-#esto nos saca un plot de los datos, aes quiere decir aesthetic, ahí ponemos que va en cada eje
+#esto nos saca un plot de los datos, aes quiere decir aesthetic, ah? ponemos que va en cada eje
 
 reg1<-lm(y~x,data=db)
 summary(reg1)
-#regresión lineal
+#regresi?n lineal
 
 
 require("stargazer")
 stargazer(reg1,type="text")
-#Esto es parecido a outreg, la salida es mas parecida a las comunes en economía 
+#Esto es parecido a outreg, la salida es mas parecida a las comunes en econom?a 
 
 
 ### Ahora lo que vamos es hacer probar el FWL Theorem
 
 #Primero "a mano"
 #Crear dummy
-db<- db %>% mutate(ej=c(rep(0,30),1)) #Esto crea un valor de 1 en la posición 31, donde sabemos que está el outlier
+db<- db %>% mutate(ej=c(rep(0,30),1)) #Esto crea un valor de 1 en la posici?n 31, donde sabemos que est? el outlier
 head(db)
 tail(db)
 
-#regresión que incluye la dummy
+#regresi?n que incluye la dummy
 reg2<-lm(y~x+ej,db)
 
-#Aquí vemos los resultados de reg1 y reg2
+#Aqu? vemos los resultados de reg1 y reg2
 stargazer(reg1,reg2,type="text")
 
-## Entonces lo que vemos es que poner la dummy para ESA OBSERVACIÓN hace que la "desaparezcamos"
+## Entonces lo que vemos es que poner la dummy para ESA OBSERVACI?N hace que la "desaparezcamos"
 
-#Ahora lo que vamos a analizar es la regresión de residuales en residuales - FWL Theorem ahora sí
+#Ahora lo que vamos a analizar es la regresi?n de residuales en residuales - FWL Theorem ahora s?
 
 ##Creamos los residuales
 
-#Correr y contra ej y luego x contra ej, llamar los residuales de cada regresión
+#Correr y contra ej y luego x contra ej, llamar los residuales de cada regresi?n
 db<-db %>% mutate(res_y_e=lm(y~ej,db)$residuals,
                   res_x_e=lm(x~ej,db)$residuals,
 )
 reg3<-lm(res_y_e~res_x_e,db) #y luego se corren los residuales de y contra los de x
-stargazer(reg1,reg2,reg3,type="text") #y aquí vemos que el B es el mismo de cuando lo hicimos a mano!
+stargazer(reg1,reg2,reg3,type="text") #y aqu? vemos que el B es el mismo de cuando lo hicimos a mano!
 
 
 
-## AHORA : leverage (será una cuarta regresión)
+## AHORA : leverage (ser? una cuarta regresi?n)
 
-db<-db %>% mutate(res_y_x=lm(y~x,db)$residuals, #Aquí sacamos los residuales de y contra x
+db<-db %>% mutate(res_y_x=lm(y~x,db)$residuals, #Aqu? sacamos los residuales de y contra x
                   res_e_x=lm(ej~x,db)$residuals, #y luego los de ej contra x
 )
 reg4<-lm(res_y_x~res_e_x,db) #y corremos esas dos cosas
-stargazer(reg1,reg2,reg3,reg4,type="text") #y aquí vemos que nos da el "PESO" (leverage), o sea cuanto me está tirando esa observación en los datos, que es el mismo B de la variable dummy que habiamos creado
+stargazer(reg1,reg2,reg3,reg4,type="text") #y aqu? vemos que nos da el "PESO" (leverage), o sea cuanto me est? tirando esa observaci?n en los datos, que es el mismo B de la variable dummy que habiamos creado
 
 
 ##Calcular alfa a mano
@@ -309,11 +309,11 @@ h<-lm.influence(reg1)$hat[31]
 h
 
 alpha<-u/(1-h)
-alpha #Esto es lo mismo que nos da en la regresión, o sea estamos probando varias maneras de sacar lo mismo
+alpha #Esto es lo mismo que nos da en la regresi?n, o sea estamos probando varias maneras de sacar lo mismo
 
-#El FWL Theorem se cumple siempre porque es una propiedad numérica, no estadística
+#El FWL Theorem se cumple siempre porque es una propiedad num?rica, no estad?stica
 
-#Podríamos por ejemplo comparar el leverage entre esa observación, la 31, y otra normalita, por decir la 29. El leverage, entre más cerca estén a la media de x, va a ser menor.
+#Podr?amos por ejemplo comparar el leverage entre esa observaci?n, la 31, y otra normalita, por decir la 29. El leverage, entre m?s cerca est?n a la media de x, va a ser menor.
 
 
 
@@ -335,7 +335,6 @@ alpha #Esto es lo mismo que nos da en la regresión, o sea estamos probando varia
 #c. repetir usando LOOCV pero solo con un modelo de los 5 planteados
 
 
-#DE ESTA CLASE NO TOMÉ APUNTES EN R ENTONCES TOCA BUSCAR EL SCRIPT DIRECTAMENTE EN 
+#DE ESTA CLASE NO TOM? APUNTES EN R ENTONCES TOCA BUSCAR EL SCRIPT DIRECTAMENTE EN 
 #Semana 2 - W2_02_Overfit_CrossVal
-
 
