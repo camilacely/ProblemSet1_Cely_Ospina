@@ -217,6 +217,7 @@ ols1<-lm(ing~edad+edad2)
 ols1
 summary(ols1) #R^2 0.017
 
+
 #Por cada año adicional de vida, las personas ganan en promedio 91.000 pesos adicionales
 #Edad^2 tiene coeficiente negativo, por lo cual sabemos que esta función no es lineal sino decreciente
 
@@ -314,6 +315,34 @@ ggplot(geih_ig , mapping = aes(x = age , y = predict(reg_1))) +
 #####################
 # 4. The earnings gap
 #####################
+
+#Estimate the unconditional earnings gap
+
+geih_f<-geih18eb
+
+geih_f <- geih_f %>% 
+  mutate(fem = ifelse(test = sex > 0 , 
+                            yes = 0, 
+                            no = 1))
+
+summary(geih_f$sex, geih_f$fem)
+head(geih_f$fem)  #fem toma valor de 1 para individuo mujer
+head(geih_f$sex)  #sex toma valor de 1 para individuo hombre
+
+geih_f <- geih_f %>% mutate(logingtot = log(ingtot))
+head(geih_f$ingtot)
+head(geih_f$logingtot)
+
+head(geih18e$sex)
+
+is.na(geih_f$logingtot)
+sum(is.na(geih_f$logingtot)) #no hay missing values
+
+geih_f$logingtot <- as.numeric(gsub("\\.", "", geih_f$logingtot))
+geih_f$fem <- as.numeric(gsub("\\.", "", geih_f$fem))
+
+ols2<-lm(geih_f$logingtot~geih_f$fem)
+
 
 #gender
 
@@ -419,4 +448,5 @@ alpha #Esto es lo mismo que nos da en la regresi?n, o sea estamos probando varia
 
 #DE ESTA CLASE NO TOM? APUNTES EN R ENTONCES TOCA BUSCAR EL SCRIPT DIRECTAMENTE EN 
 #Semana 2 - W2_02_Overfit_CrossVal
+
 
