@@ -102,11 +102,6 @@ geih18<-geih[!(geih$age<18),] #24.568 observaciones
 
 geih18e<-geih18[!(geih18$ocu<1),] #16.542 observaciones #ocu = 1 if occupied, 0 otherwise
 
-oc<-geih18$ocu
-
-########Base final elegida= geih18e#################
-
-
 
 
 #ELECCION DE VARIABLE Y
@@ -295,12 +290,12 @@ box_plot
 
 #En este histograma podemos ver la distribucion del logaritmo del ingreso contra el nivel de educacion maximo de la muestra diferenciado por el genero de los encuestados. 
 ggplot(geih_e, aes(x= educ_time)) + geom_bar(width=2, colour="steelblue", fill="steelblue1") +  
-  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=5.0)+  
+  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=2.5)+  
   facet_wrap(~fem)  
 
 #En este histograma podemos ver la distribucion del logaritmo del ingreso contra el estrato de las observaciones de la muestra diferenciado por el genero de los encuestados. 
 ggplot(geih_e, aes(x= estrato)) + geom_bar(width=2, colour="steelblue", fill="steelblue1") +  
-  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=5.0)+  
+  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=2.5)+  #le cambie el tamaño de la letra para mejor comprension
   facet_wrap(~fem)
 
 
@@ -308,7 +303,7 @@ ggplot(geih_e, aes(x= estrato)) + geom_bar(width=2, colour="steelblue", fill="st
 # 3. Age-earnings profile
 #####################
 
-#ELECCION DE Y (INCOME) 
+#ELECCION DE Y (INCOME) - recordemos que esto ya lo habiamos definido bien en el punto 2 para sacar las estadisticas descriptivas
 
 summary(geih_e$ingtot) #El 75% de los encuestados gana menos de 1'723.000, sin embargo el promedio es de 1'769.000, por lo cual
 #podemos concluir que el 25% de mayores ingresos est? arrastrando ese promedio
@@ -334,10 +329,11 @@ ols1
 ols1prueba #s? da lo mismo
 
 summary(ols1) #R^2 0.017 #Residual standard error: 2653000 on 16539 degrees of freedom
+#age= 89516.9
 
 #r^2 = fraction of the total variability in the response that is accounted for by the model
 
-#Por cada a?o adicional de vida, las personas ganan en promedio 91.000 pesos adicionales
+#Por cada a?o adicional de vida, las personas ganan en promedio 89.000 pesos adicionales
 #Edad^2 tiene coeficiente negativo, por lo cual sabemos que esta funci?n no es lineal sino decreciente
 
 require("stargazer")
@@ -379,7 +375,7 @@ ggplot(geih_pre , mapping = aes(x = age , y = predict(reg_1))) +
 #lo cual coincide con los resultados matematicos que obtenemos mas adelante
 
 ggplot(geih_e, aes(x=age, y=predict(ols1))) + 
-  geom_point(col = "red" , size = 0.5)
+  geom_point(col = "red" , size = 0.5) #esta grafica es mejor por lo tanto usaremos esta metodologia
 
 
 ##### Para proyectar peak-age
@@ -401,7 +397,7 @@ b1<-coefs1[2]
 b2<-coefs1[3]
 
 peak_age<--(b1/(2*b2))
-# peak_age = 57.01732 
+# peak_age = 57.99338 
 
 #Bootstrap= resample from the sample
 
@@ -420,11 +416,11 @@ for(i in 1:R){
   
 }
 
-plot(hist(eta_mod1)) #centrado alrededor de 90000 mas o menos, se nota distribuci?n normal
+plot(hist(eta_mod1)) #centrado alrededor de 90000 mas o menos, se nota distribuci?n normal aunque la cola izquierda es mas larga
 
-mean(eta_mod1) #Da 90806 y en la regresi?n daba 91143
-sqrt(var(eta_mod1)) #Da 13011 y en la regresi?n daba 8886,41 (error est?ndar - medida de incertidumbre)
-quantile(eta_mod1,c(0.025,0.975)) #intervalo de confianza al 95% sabemos que est? entre 62.034 y 115.016
+mean(eta_mod1) #Da 90046.18 y en la regresi?n daba 91143
+sqrt(var(eta_mod1)) #Da 13139.65 y en la regresi?n daba 8886,41 (error est?ndar - medida de incertidumbre)
+quantile(eta_mod1,c(0.025,0.975)) #intervalo de confianza al 95% sabemos que est? entre 64.385 y 114.331
 
 
 #Boot package
@@ -439,12 +435,12 @@ eta.fn<-function(geih_e,index){
 boot(geih_e, eta.fn, R)
 
 #Bootstrap Statistics :
-#        original      bias    std. error
-#t1* -436662.8762 6074.692086 230519.6902
-#t2*   91143.4564 -372.429039  13127.7804
-#t3*    -799.2612    5.085823    166.9154
+#      original       bias    std. error
+#t1* -391598.363 -538.7261414 229565.4194
+#t2*   89516.853   29.8520719  13126.1386
+#t3*    -771.785   -0.4411129    168.1169 #*******
 
-#Del paquete boot obtenemos coeficiente 91143,458 y en la regresi?n nos daba 91143,460 (se acerca m?s que de la manera manual)
+#Del paquete boot obtenemos coeficiente 89516.853 y en la regresi?n nos daba 91143,460 (se acerca m?s que de la manera manual)
 #De error est?ndar obtenemos 13127 y en la regresi?n daba 8886,41, en ambos casos da mayor que en la regresion sobre muestra
 
 #Standard error: By calculating standard error, you can estimate how representative your sample is of your population and make valid conclusions.
