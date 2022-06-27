@@ -17,6 +17,7 @@ library(rvest)
 library(dplyr)
 library(skimr)
 library(ggplot2)
+library(caret)
 
 #Set
 
@@ -105,6 +106,8 @@ geih18e<-geih18[!(geih18$ocu<1),] #16.542 observaciones #ocu = 1 if occupied, 0 
 edad<-geih18e$age
 educ<-geih18e$maxEducLevel
 gen<-geih18e$sex
+#dplyr::recode(gen, `0`=1,  `1`=0)
+
 
 #Experiencia potencial
 #En la literatura se ha utilizado como proxy de la experiencia la experiencia potencial.
@@ -131,12 +134,15 @@ educ_time<-case_when(educ <= 1 ~ 0,
   
 exp_potencial<-edad-educ_time-5
 
+tipo_oficio<-geih18e$oficio
+formal<-geih18e$formal
+
 #Notas para m?s adelante (revisemos) 
 #de pronto en los modelos m?s complejos podemos controlar por depto, ya que en las regiones los salarios son distintos
 #otra: variable "informal", por mas que una persona trabaje x horas si es de manera informal seguramente recibe menos, ver si esto se cubre con la interaccion educ--hoursWorkUsual 
 #otra: second job? hoursWorkActualSecondJob 
 #otra: P6050 es la variable que dice la relaci?n con "jefe del hogar", ver si sacamos de ac? los hijos
-#otra: ingreso por arriendos?
+#otra: ingreso por arriendos? > ya la incluimos con ingtot
 #otra: controlar por oficio?
 
 
@@ -170,9 +176,10 @@ str(geih18e)
 names(geih18e)
 
 head(geih18e[,c("age","maxEducLevel","sex")])
+tail(geih18e[,c("age","maxEducLevel","sex")])
 
 summary(geih18e$age) #el 75% de los encuestados tiene menos de 50 a?os
-summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica
+summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica -> 1
 summary(educ_time) #en promedio, las personas encuestadas tienen 12,42 a?os de educaci?n (secundaria completa)
 summary(geih18e$sex) #53% de los encuestados son hombres
 summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
@@ -183,10 +190,45 @@ skim(geih18e) #Esto saca estad?sticas de todas las variables pero la base tiene 
 subset <- geih18e %>% select(age, maxEducLevel, sex)
 skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?ricas
 
+##
+ing<-geih18e$ingtot #esto es para tener el script, si algo cambiamos la variable si se requiere
+summary(geih18e$ing)
 
-#Gr?ficas (Pendiente! Principalmente porque debemos sacarlas contra ingreso, entonces pendiente definir la Y)
-ggplot(data = subset , mapping = aes(x = age , y = age))+
-  geom_point(col = "red" , size = 0.5)
+
+##DistribuciÃ³n en densidad de ingreso
+d <- ggplot(geih18e, aes(x=)) + 
+  geom_density()
+d+ geom_vline(aes(xintercept=mean(ing)),
+              color="blue", linetype="dashed", size=1)
+
+
+#justificaciÃ³n: Se escoge la variable ingtot pues estÃ¡ teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que deberÃ­a tener de acuerdo con las caracterÃ­sticas observadas.  
+#Se asume que el DANE hace un ejercicio confiable en la imputaciÃ³n al ser una fuente confiable. 
+
+
+#Podemos ver como estÃ¡ distribuido el ingreso de acuerdo con el genero de la persona encuestada. Podemos ver de forma muy introductoria que se presentan outliers.  
+ggplot(data = geih18e , mapping = aes(x = age , y = ing))+
+  geom_point(col = "tomato" , size = 0.5)
+
+p <- ggplot(data=geih18e) + 
+  geom_histogram(bins=30, mapping = aes(x=ing , group=as.factor(gen) , fill=as.factor(gen)))
+  
+p + scale_fill_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
+
+box_plot <- ggplot(data=geih18e , mapping = aes(as.factor(educ_time) , ing)) + 
+  geom_boxplot() + geom_point(aes(colour=as.factor(gen))) +
+  scale_color_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
+box_plot
+##Creo que se puede diferenciar mejor en el boxplot y en el geom_point creo que con solo una estarÃ­a bien. 
+
+#En este histograma podemos ver la distribucion del nivel de educacion maximo de la muestra diferenciado por el genero de los encuestados. 
+ggplot(geih18e, aes(x= educ_time)) + geom_bar(width=0.5, colour="blue", fill="steelblue") +  
+  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=5.0)+  
+  facet_wrap(~sex)
+
+
+#simetrÃ­a de la variable ingreso: 
+BoxCoxTrans(geih18e$ing)
 
 #Pendiente completar pero en general es cacharrearle, ya no necesita concatenaci?n
 #?tiles: clase del 11 de junio y Intro_to_R (bloque ne?n)
@@ -200,7 +242,7 @@ ggplot(data = subset , mapping = aes(x = age , y = age))+
 #ELECCION DE Y (INCOME) 
 
 summary(geih18e$ingtot) #El 75% de los encuestados gana menos de 1'723.000, sin embargo el promedio es de 1'769.000, por lo cual
-#podemos concluir que el 25% de mayores ingresos está arrastrando ese promedio
+#podemos concluir que el 25% de mayores ingresos est? arrastrando ese promedio
 
 ing<-geih18e$ingtot 
 
@@ -218,8 +260,12 @@ ols1
 summary(ols1) #R^2 0.017
 
 
-#Por cada año adicional de vida, las personas ganan en promedio 91.000 pesos adicionales
-#Edad^2 tiene coeficiente negativo, por lo cual sabemos que esta función no es lineal sino decreciente
+
+
+
+#Por cada a?o adicional de vida, las personas ganan en promedio 91.000 pesos adicionales
+#Edad^2 tiene coeficiente negativo, por lo cual sabemos que esta funci?n no es lineal sino decreciente
+
 
 resid1<-resid(ols1)
 plot(edad,resid1)
@@ -261,21 +307,21 @@ R<-1000 #num de repeticiones
 eta_mod1<-rep(0,R) #vector de ceros de numero R
 
 geih18eb<-geih18e #No quiero modificar la base original entonces le creo una copia
-geih18eb$age2<-geih18eb$age^2 #Aquí si meto age^2
+geih18eb$age2<-geih18eb$age^2 #Aqu? si meto age^2
 
 for(i in 1:R){
-  geih_sample<-sample_frac(geih18eb,size=1,replace=TRUE) #muestra del mismo tamaño que la original - con reemplazo
+  geih_sample<-sample_frac(geih18eb,size=1,replace=TRUE) #muestra del mismo tama?o que la original - con reemplazo
   f<-lm(ingtot~age+age2,geih_sample)
   coefs<-f$coefficients #agarrame los coeficientes de f, o sea de la reg lineal
-  eta_mod1[i]<-coefs[2] #irlos reemplazando en mi vector de ceros, y el 2 corresponde al coeficiente que nos interesa, obviamente ese 2 depende del orden en que uno escribió la regresión
+  eta_mod1[i]<-coefs[2] #irlos reemplazando en mi vector de ceros, y el 2 corresponde al coeficiente que nos interesa, obviamente ese 2 depende del orden en que uno escribi? la regresi?n
   
 }
 
-plot(hist(eta_mod1)) #centrado alrededor de 90000 mas o menos, se nota distribución normal
+plot(hist(eta_mod1)) #centrado alrededor de 90000 mas o menos, se nota distribuci?n normal
 
-mean(eta_mod1) #Da 90936 y en la regresión daba 91143
-sqrt(var(eta_mod1)) #Da 12286,59 y en la regresión daba 8886,41 (error estándar - medida de incertidumbre)
-quantile(eta_mod1,c(0.025,0.975)) #intervalo de confianza al 95% sabemos que está entre 65.667 y 113.925
+mean(eta_mod1) #Da 90936 y en la regresi?n daba 91143
+sqrt(var(eta_mod1)) #Da 12286,59 y en la regresi?n daba 8886,41 (error est?ndar - medida de incertidumbre)
+quantile(eta_mod1,c(0.025,0.975)) #intervalo de confianza al 95% sabemos que est? entre 65.667 y 113.925
 
 #Boot package
 
@@ -294,12 +340,12 @@ boot(geih18eb, eta.fn, R)
 #t2*   91143.4584  60.7704062  12339.3418  #este es el que analizamos
 #t3*    -799.2612  -0.9719388    156.7125
 
-#Del paquete boot obtenemos coeficiente 91143,458 y en la regresión nos daba 91143,460 (se acerca más que de la manera manual)
-#De error estándar obtenemos 12339,34 y en la regresión daba 8886,41 
+#Del paquete boot obtenemos coeficiente 91143,458 y en la regresi?n nos daba 91143,460 (se acerca m?s que de la manera manual)
+#De error est?ndar obtenemos 12339,34 y en la regresi?n daba 8886,41 
 
 
-#Peak age= derivar e igualar a cero, construir los intervalos de confianza a partir de los errores estándares
-# CI=[coef???1.96×SE,coef+1.96×SE] #CI: confidence intervals #SE: standard error
+#Peak age= derivar e igualar a cero, construir los intervalos de confianza a partir de los errores est?ndares
+# CI=[coef???1.96?SE,coef+1.96?SE] #CI: confidence intervals #SE: standard error
 
 #Plot predict
 geih_ig<-geih18e
