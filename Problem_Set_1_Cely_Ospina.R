@@ -664,35 +664,36 @@ peak_ageum<--(upperm/(2*upper2m)) # 66.58934
 
 #Primer modelo: el mismo de age y age2, pero incorporandole la variable fem (porque en el punto anterior lo que hicimos fue dividir la muestra)
 
-ols3<-lm(logingtot~age+age2+fem,geih_e) #coeficiente fem negativo
+ols3<-lm(logingtot~fem+age+age2,geih_e) #coeficiente fem negativo
 summary(ols3) #r^2= 0.037
 stargazer(ols3)
 
 #siguiente modelo: incorporando educacion 
-ols4<-lm(logingtot~age+age2+fem+maxEducLevel,geih_e) #coeficiente fem negativo, el coef de edad baja porque el de educ es positivo
+ols4<-lm(logingtot~fem+age+age2+maxEducLevel,geih_e) #coeficiente fem negativo, el coef de edad baja porque el de educ es positivo
 summary(ols4) #r^2= 0.21 #el r^2 mejora mucho
 stargazer(ols4)
 
 #siguiente modelo: controlamos por oficio
-ols5<-lm(logingtot~age+age2+fem+maxEducLevel+oficio,geih_e) #la interpretacion de oficio no es clara porque es categorica, pero lo que importa 
+ols5<-lm(logingtot~fem+age+age2+maxEducLevel+oficio,geih_e) #la interpretacion de oficio no es clara porque es categorica, pero lo que importa 
 #es que ayuda a explicar mejor el modelo y los coeficientes de las otras variables se continuan comportando segun lo esperado
 summary(ols5) #r^2= 0.26 #el r^2 continua mejorando
 stargazer(ols5)
 
 #siguiente modelo: ver si el trabajo formal implica mejores ingresos
-ols6<-lm(logingtot~age+age2+fem+maxEducLevel+oficio+formal,geih_e)
+ols6<-lm(logingtot~fem+age+age2+maxEducLevel+oficio+formal,geih_e)
 summary(ols6) #r^2= 0.36 #el r^2 continua mejorando y efectivamente el trabajo formal implica mayor ingreso
 stargazer(ols6)
 
-#siguiente modelo: ver como se comporta con la variable estrato
-ols7<-lm(logingtot~age+age2+fem+maxEducLevel+oficio+formal+estrato,geih_e)
+#ultimo modelo: ver como se comporta con la variable estrato
+ols7<-lm(logingtot~fem+age+age2+maxEducLevel+oficio+formal+estrato,geih_e)
 summary(ols7) #r^2 aumenta a 0.44 y la variable de estrato es significativa
 #nota: hay que tener cuidado porque estrato podria ser una variable endogena (menor ingreso lleva a elegir menor estrato de residencia)
 #sin embargo vivir en barrios de menores estratos puede estar generando dificultad de acceso a trabajos mejor pagos
-stargazer(ols7) 
+stargazer(ols7)
+
 
         
-#FWL para sacar las variables de control pero teoricamente nos debe dar lo mismo
+#Use FWL to repeat the above estimation, where the interest lies on b2 
 
 ##########
 ##VOY A PEGAR AQU? MI SCRIPT COMENTADO DE JUNIO 8 DONDE NOS EXPLICARON COMO SACAR EL FWL THEOREM
