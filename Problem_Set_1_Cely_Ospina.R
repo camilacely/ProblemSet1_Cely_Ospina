@@ -364,7 +364,7 @@ ggplot(geih_ig , mapping = aes(x = age , y = predict(reg_1))) +
 
 #Estimate the unconditional earnings gap
 
-geih_f<-geih18eb
+geih_f<-geih18e
 
 geih_f <- geih_f %>% 
   mutate(fem = ifelse(test = sex > 0 , 
@@ -375,22 +375,57 @@ summary(geih_f$sex, geih_f$fem)
 head(geih_f$fem)  #fem toma valor de 1 para individuo mujer
 head(geih_f$sex)  #sex toma valor de 1 para individuo hombre
 
+geih_f$ingtot[geih_f$ingtot == 0] <- 1
 geih_f <- geih_f %>% mutate(logingtot = log(ingtot))
+
+logingtot<-geih_f$logingtot 
+
 head(geih_f$ingtot)
 head(geih_f$logingtot)
+summary(geih_f$ingtot)
+summary(geih_f$logingtot)
 
-head(geih18e$sex)
+ols2<-lm(geih_f$logingtot~geih_f$fem) #Regresión propuesta en el taller
+ols2
+summary(ols2) #R^2 0.009
+require("stargazer")
+stargazer(ols2)
 
-is.na(geih_f$logingtot)
-sum(is.na(geih_f$logingtot)) #no hay missing values
+geih_f$age2<-geih_f$age^2 
+ols3<-lm(logingtot~age+age2+fem,geih_f)
+ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
 
-geih_f$logingtot <- as.numeric(gsub("\\.", "", geih_f$logingtot))
-geih_f$fem <- as.numeric(gsub("\\.", "", geih_f$fem))
+geih_fp<-geih_f
+geih_fp<-data.frame(age=runif(30,18,80),)
+geih_fp<-geih_fp %>% mutate(ingtot=rnorm(30,mean=12+0.06*age-0.001*age2))
+                         
+reg_2<-lm(ingtot~age+age2+fem,geih_fp)
+ggplot(geih_fp , mapping = aes(x = age , y = predict(reg_2))) +
+  geom_point(col = "red" , size = 0.5)
 
-ols2<-lm(geih_f$logingtot~geih_f$fem)
 
 
-#gender
+resid2<-resid(ols2)
+plot(edad,resid2)
+
+ggplot(data = geih_f , mapping = aes(x = age , y = resid2))+
+  geom_point(col = "red" , size = 0.5)
+
+fit2<-fitted(ols2)
+par(mfrow=c(2,2))
+plot(ols2)
+
+ggplot(data = geih_f , mapping = aes(x = age , y = logingtot))+
+  geom_point(col = "red" , size = 0.5)
+
+ggplot(data = geih_f , mapping = aes(x = age , y = logingtot))+
+  geom_point(col = "red" , size = 0.5) + stat_smooth(method= "lm", col="red")
+
+
+
+
+
+
 
 #lo mismo del anterior pero con gender, igualmente usar bootstrap, pendiente entender
 
