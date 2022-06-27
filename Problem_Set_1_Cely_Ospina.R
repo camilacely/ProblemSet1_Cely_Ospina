@@ -129,12 +129,14 @@ educ_time<-case_when(educ <= 1 ~ 0,
   
 exp_potencial<-edad-educ_time-5
 
+tipo_oficio<-geih18e$oficio
+
 #Notas para m?s adelante (revisemos) 
 #de pronto en los modelos m?s complejos podemos controlar por depto, ya que en las regiones los salarios son distintos
 #otra: variable "informal", por mas que una persona trabaje x horas si es de manera informal seguramente recibe menos, ver si esto se cubre con la interaccion educ--hoursWorkUsual 
 #otra: second job? hoursWorkActualSecondJob 
 #otra: P6050 es la variable que dice la relaci?n con "jefe del hogar", ver si sacamos de ac? los hijos
-#otra: ingreso por arriendos?
+#otra: ingreso por arriendos? > ya la incluimos con ingtot
 #otra: controlar por oficio?
 
 
@@ -168,9 +170,10 @@ str(geih18e)
 names(geih18e)
 
 head(geih18e[,c("age","maxEducLevel","sex")])
+tail(geih18e[,c("age","maxEducLevel","sex")])
 
 summary(geih18e$age) #el 75% de los encuestados tiene menos de 50 a?os
-summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica
+summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica -> 1
 summary(educ_time) #en promedio, las personas encuestadas tienen 12,42 a?os de educaci?n (secundaria completa)
 summary(geih18e$sex) #53% de los encuestados son hombres
 summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
@@ -181,10 +184,43 @@ skim(geih18e) #Esto saca estad?sticas de todas las variables pero la base tiene 
 subset <- geih18e %>% select(age, maxEducLevel, sex)
 skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?ricas
 
+##
+ing<-geih18e$ingtot #esto es para tener el script, si algo cambiamos la variable si se requiere
+summary(geih18e$ing)
 
-#Gr?ficas (Pendiente! Principalmente porque debemos sacarlas contra ingreso, entonces pendiente definir la Y)
-ggplot(data = subset , mapping = aes(x = age , y = age))+
-  geom_point(col = "red" , size = 0.5)
+
+##Distribución en densidad de ingreso
+d <- ggplot(geih18e, aes(x=)) + 
+  geom_density()
+d+ geom_vline(aes(xintercept=mean(ing)),
+              color="blue", linetype="dashed", size=1)
+
+
+#justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
+#Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
+
+
+#Podemos ver como está distribuido el ingreso de acuerdo con el genero de la persona encuestada. Podemos ver de forma muy introductoria que se presentan outliers.  
+ggplot(data = geih18e , mapping = aes(x = age , y = ing))+
+  geom_point(col = "tomato" , size = 0.5)
+
+p <- ggplot(data=geih18e) + 
+  geom_histogram(bins=30, mapping = aes(x=ing , group=as.factor(gen) , fill=as.factor(gen)))
+  
+p + scale_fill_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
+
+box_plot <- ggplot(data=geih18e , mapping = aes(as.factor(educ_time) , ing)) + 
+  geom_boxplot() + geom_point(aes(colour=as.factor(gen))) +
+  scale_color_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
+box_plot
+##Creo que se puede diferenciar mejor en el boxplot y en el geom_point creo que con solo una estaría bien. 
+
+#En este histograma podemos ver la distribucion del nivel de educacion maximo de la muestra diferenciado por el genero de los encuestados. 
+ggplot(geih18e, aes(x= educ_time)) + geom_bar(width=0.5, colour="blue", fill="steelblue") +  
+  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=5.0)+  
+  facet_wrap(~sex)
+
+
 
 #Pendiente completar pero en general es cacharrearle, ya no necesita concatenaci?n
 #?tiles: clase del 11 de junio y Intro_to_R (bloque ne?n)
@@ -194,15 +230,6 @@ ggplot(data = subset , mapping = aes(x = age , y = age))+
 #####################
 # 3. Age-earnings profile
 #####################
-
-#ELECCI?N DE Y (INCOME) #SARA puedes ver cu?l variable usamos en el taller del a?o pasado? Yo propongo impa
-
-
-summary(geih18e$igtot)
-ing<-geih18e$ingtot #esto es para tener el script, si algo cambiamos la variable si se requiere
-
-#justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
-#Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
 
 
 #Correr OLS de income y age
