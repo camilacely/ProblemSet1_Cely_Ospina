@@ -106,13 +106,28 @@ geih18e<-geih18[!(geih18$ocu<1),] #16.542 observaciones #ocu = 1 if occupied, 0 
 edad<-geih18e$age
 educ<-geih18e$maxEducLevel
 gen<-geih18e$sex
-#dplyr::recode(gen, `0`=1,  `1`=0)
 
+#se recodifica la variable genero con el fin de encontrar cual es el efecto de ser mujer, al especificar este como 1 y hombre como 0
+geih18e <- geih18e %>% 
+  mutate(fem = ifelse(test = gen > 0 , 
+                      yes = 0, 
+                      no = 1))
 
-#Experiencia potencial
+head(geih18e$gen)  #gen toma valor de 1 para individuo mujer 0 para individuo hombre
+
+#Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este 
+geih18e <- geih18e %>% mutate(logingtot = log(ingtot))
+head(geih18e$ingtot)
+head(geih18e$logingtot)
+
+#
+is.na(geih_f$logingtot)
+sum(is.na(geih_f$logingtot)) #no hay missing values
+
+#se incluye la variable de Experiencia potencial
 #En la literatura se ha utilizado como proxy de la experiencia la experiencia potencial.
-#Esta nace de restarla a la edad de la persona, los a?os que ha estudiado 
-#Y adem?s cinco a?os adicionales, pues en su primera infancia ni estudia ni trabaja
+#Esta nace de restarle a la edad de la persona, los a?os que ha estudiado 
+#Y ademas cinco a?os adicionales, pues en su primera infancia ni estudia ni trabaja
 
 #maxEducLevel	1	None
 #maxEducLevel	2	preschool
@@ -136,6 +151,7 @@ exp_potencial<-edad-educ_time-5
 
 tipo_oficio<-geih18e$oficio
 formal<-geih18e$formal
+dpto<-geih18e$dpto
 
 #Notas para m?s adelante (revisemos) 
 #de pronto en los modelos m?s complejos podemos controlar por depto, ya que en las regiones los salarios son distintos
@@ -178,40 +194,36 @@ names(geih18e)
 head(geih18e[,c("age","maxEducLevel","sex")])
 tail(geih18e[,c("age","maxEducLevel","sex")])
 
+summary(geih18e$sex, geih18e$gen)
 summary(geih18e$age) #el 75% de los encuestados tiene menos de 50 a?os
-summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica -> 1
+summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica -> 1 missing 
 summary(educ_time) #en promedio, las personas encuestadas tienen 12,42 a?os de educaci?n (secundaria completa)
 summary(geih18e$sex) #53% de los encuestados son hombres
 summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
-
-summary(geih18e$impa) #Propuesta de variable Y de ingreso: impa. 248 missing values, revisar, adem?s hay varios valores de cero y te?ricamente no tenemos desempleados!
 
 skim(geih18e) #Esto saca estad?sticas de todas las variables pero la base tiene muchas columnas, por lo cual crear? un subset
 subset <- geih18e %>% select(age, maxEducLevel, sex)
 skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?ricas
 
-##
-ing<-geih18e$ingtot #esto es para tener el script, si algo cambiamos la variable si se requiere
+#se define la variable Y
+ing<-geih18e$ingtot 
 summary(geih18e$ing)
-
-
-##Distribución en densidad de ingreso
-d <- ggplot(geih18e, aes(x=)) + 
-  geom_density()
-d+ geom_vline(aes(xintercept=mean(ing)),
-              color="blue", linetype="dashed", size=1)
-
-
 #justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
 #Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
 
+##Distribución en densidad de ingreso
+d <- ggplot(geih18e, aes(x=logingtot)) + 
+  geom_density()
+d+ geom_vline(aes(xintercept=mean(logingtot)),
+              color="blue", linetype="dashed", size=1)
+
 
 #Podemos ver como está distribuido el ingreso de acuerdo con el genero de la persona encuestada. Podemos ver de forma muy introductoria que se presentan outliers.  
-ggplot(data = geih18e , mapping = aes(x = age , y = ing))+
+ggplot(data = geih18e , mapping = aes(x = age , y = logingtot))+
   geom_point(col = "tomato" , size = 0.5)
 
 p <- ggplot(data=geih18e) + 
-  geom_histogram(bins=30, mapping = aes(x=ing , group=as.factor(gen) , fill=as.factor(gen)))
+  geom_histogram(bins=30, mapping = aes(x=logingtot , group=as.factor(gen) , fill=as.factor(gen)))
   
 p + scale_fill_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
 
