@@ -372,7 +372,7 @@ boot(geih18eb, eta.fn, R)
 geih_ig<-geih18e
 geih_ig<-data.frame(age=runif(30,18,80))
 geih_ig<- geih_ig %>% mutate(age2=age^2,
-                     ingtot=rnorm(30,mean=12+0.06*age-0.001*age2))  
+                     ingtot=rnorm(30,mean=12+0.06*age-0.001*age2)) #crear ingtot en esta submuestra 
 reg_1<-lm(ingtot~age+age2,geih_ig)
 ggplot(geih_ig , mapping = aes(x = age , y = predict(reg_1))) +
   geom_point(col = "red" , size = 0.5)
@@ -399,7 +399,7 @@ head(geih_f$sex)  #sex toma valor de 1 para individuo hombre
 geih_f$ingtot[geih_f$ingtot == 0] <- 1
 geih_f <- geih_f %>% mutate(logingtot = log(ingtot))
 
-logingtot<-geih_f$logingtot 
+logingtot<-geih_f$logingtot  
 
 head(geih_f$ingtot)
 head(geih_f$logingtot)
@@ -408,23 +408,30 @@ summary(geih_f$logingtot)
 
 ols2<-lm(geih_f$logingtot~geih_f$fem) #Regresi?n propuesta en el taller
 ols2
+ols2<-lm(geih_f$logingtot~geih_f$fem) #Regresi?n propuesta en el taller
+ols2 #se corre el modelo y sale coeficiente negativo para mujer
+
+
 summary(ols2) #R^2 0.009
 require("stargazer")
 stargazer(ols2)
 
+#pruebas
 geih_f$age2<-geih_f$age^2 
-ols3<-lm(logingtot~age+age2+fem,geih_f)
+ols3<-lm(logingtot~age+age2+fem,geih_f) #continua siendo coeficiente fem negativo
 ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
 
-geih_fp<-geih_f
-geih_fp<-data.frame(age=runif(30,18,80),)
-geih_fp<-geih_fp %>% mutate(ingtot=rnorm(30,mean=12+0.06*age-0.001*age2))
-                         
-reg_2<-lm(ingtot~age+age2+fem,geih_fp)
-ggplot(geih_fp , mapping = aes(x = age , y = predict(reg_2))) +
+#predict by gender (pendiente terminar)
+geih_igf<-geih18e
+geih_igf<-data.frame(age=runif(30,18,80),fem=runif(30,18,80)) ##PENDIENTE SACAR ESTO PORQUE NO SALE BIEN Y NO ENTIENDO EL CODIGO
+geih_igf<- geih_igf %>% mutate(age2=age^2,
+                             
+                             ingtot=rnorm(30,mean=12+0.06*age-0.001*age2)) #aqui crea ingtot en esta submuestra 
+reg_2<-lm(ingtot~age+age2+fem,geih_ig)
+ggplot(geih_ig , mapping = aes(x = age , y = predict(reg_2))) +
   geom_point(col = "red" , size = 0.5)
 
-
+#analysis, pendiente sacar para los otros modelos relevantes
 
 resid2<-resid(ols2)
 plot(edad,resid2)
@@ -443,16 +450,37 @@ ggplot(data = geih_f , mapping = aes(x = age , y = logingtot))+
   geom_point(col = "red" , size = 0.5) + stat_smooth(method= "lm", col="red")
 
 
+#bootstrap
+
+require("boot")
+set.seed(123)
+R<-1000
+
+eta.fnf<-function(geih_f,index){
+  coef(lm(logingtot~age+age2+fem, data = geih_f, subset = index))
+}
+
+
+boot(geih_f, eta.fnf, R) 
+
+#Bootstrap Statistics :
+#       original        bias     std. error
+#t1* 12.244988312  5.444330e-03 0.1683361961
+#t2*  0.088162861 -2.915204e-04 0.0087396536
+#t3* -0.001027477  3.550194e-06 0.0001055477
+#t4* -0.398860921  1.291200e-03 0.0307740015
+
+#^esto da muy parecido a la regresion ols3 entonces lo que hay que hacer es nuevamente comparar los std. errors
 
 
 
+########variables de control, pendiente completar
 
+summary(geih_f$oficio)
+as.factor(geih_f$oficio)
+ols5<-lm(logingtot~age+age2+fem+oficio,geih_f)
+summary(ols5)
 
-#lo mismo del anterior pero con gender, igualmente usar bootstrap, pendiente entender
-
-
-
-#luego meter variables de control
 
 
 #FWL para sacar las variables de control pero teoricamente nos debe dar lo mismo
@@ -460,6 +488,7 @@ ggplot(data = geih_f , mapping = aes(x = age , y = logingtot))+
 ##########
 ##VOY A PEGAR AQU? MI SCRIPT COMENTADO DE JUNIO 8 DONDE NOS EXPLICARON COMO SACAR EL FWL THEOREM
 #######
+########pendiente corregir las variables
 
 ggplot(db) +
   geom_point(aes(x=x,y=y))
