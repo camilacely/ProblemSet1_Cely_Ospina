@@ -110,7 +110,7 @@ oc<-geih18$ocu
 
 edad<-geih18e$age
 educ<-geih18e$maxEducLevel
-gen<-geih18e$sex
+gen<-geih18e$sex #gen = sex, o sea que valor de 1 corresponde a hombre
 
 head(geih18e$sex)
 
@@ -122,10 +122,7 @@ geih18e <- geih18e %>%
 
 head(geih18e$fem)  #fem toma valor de 1 para individuo mujer #si comparamos este head con el de sex vemos que se invierte
 
-
-#
-is.na(geih_f$logingtot)
-sum(is.na(geih_f$logingtot)) #no hay missing values
+fem<-geih18e$fem 
 
 #se incluye la variable de Experiencia potencial
 #En la literatura se ha utilizado como proxy de la experiencia la experiencia potencial.
@@ -153,16 +150,10 @@ educ_time<-case_when(educ <= 1 ~ 0,
 exp_potencial<-edad-educ_time-5
 
 tipo_oficio<-geih18e$oficio
+tipo_oficio<-as.factor(tipo_oficio)
 formal<-geih18e$formal
-dpto<-geih18e$dpto
-
-#Notas para m?s adelante (revisemos) 
-#de pronto en los modelos m?s complejos podemos controlar por depto, ya que en las regiones los salarios son distintos
-#otra: variable "informal", por mas que una persona trabaje x horas si es de manera informal seguramente recibe menos, ver si esto se cubre con la interaccion educ--hoursWorkUsual 
-#otra: second job? hoursWorkActualSecondJob 
-#otra: P6050 es la variable que dice la relaci?n con "jefe del hogar", ver si sacamos de ac? los hijos
-#otra: ingreso por arriendos? > ya la incluimos con ingtot
-#otra: controlar por oficio?
+estrato<-geih18e$estrato
+estrato<-as.factor(estrato)
 
 
 #Missing values analysis
@@ -188,7 +179,7 @@ sum(is.na(geih18e$sex)) #no hay missing values
 is.na(exp_potencial) 
 sum(is.na(exp_potencial)) #Como esta variable depende de edad y de maxEducLevel, tiene 1 missing value
 
-#Nota: (Considero que al tener un ?nico missing value, por ahora podemos no hacer nada al respecto porque no creo que esa ?nica observaci?n afecte los resultados)
+#Este unico missing value no representa problemas en una muestra de mas de 16000 observaciones
 
 dim(geih18e)
 str(geih18e)
@@ -197,8 +188,11 @@ names(geih18e)
 head(geih18e[,c("age","maxEducLevel","sex")])
 tail(geih18e[,c("age","maxEducLevel","sex")])
 
-summary(geih18e$sex, geih18e$gen)
+summary(geih18e$sex)
+
 summary(geih18e$age) #el 75% de los encuestados tiene menos de 50 a?os
+
+as.factor(geih18e$maxEducLevel)
 summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica -> 1 missing 
 summary(educ_time) #en promedio, las personas encuestadas tienen 12,42 a?os de educaci?n (secundaria completa)
 summary(geih18e$sex) #53% de los encuestados son hombres
@@ -208,14 +202,17 @@ skim(geih18e) #Esto saca estad?sticas de todas las variables pero la base tiene 
 subset <- geih18e %>% select(age, maxEducLevel, sex)
 skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?ricas
 
+
 #ELECCION DE VARIABLE Y
 geih_e<-geih18e
 ing<-geih18e$ingtot 
-geih_e$ingtot[geih_e$ingtot == 0] <- 1
+geih_e$ingtot[geih_e$ingtot == 0] <- 1 #se cambian los valores de ingreso 0 a ingreso 1 para que el ln no salga como menos infinito
 geih_e <- geih_e %>% mutate(logingtot = log(ingtot))
 #Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este 
 
-summary(geih18e$ingtot)
+####Nota: geih_e es una copia de geih18e pero en la que modificamos los valores de ingreso, de ahora en adelante se usar� esta
+
+summary(geih_e$ingtot)
 
 logingtot<-geih_e$logingtot 
 #justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
@@ -223,7 +220,7 @@ logingtot<-geih_e$logingtot
 
 ##obtenemos estadísticas descriptivas de las variables seleccionadas
 #NOTA: HARÍA FALTA EXP_POTENCIAL
-subset2 <- geih_e %>% select(age, sex, maxEducLevel, formal, dpto, oficio)
+subset2 <- geih_e %>% select(age, sex, maxEducLevel, formal, estrato, oficio)
 skim(subset2)
 
 ##Distribución en densidad de ingreso
@@ -246,6 +243,7 @@ box_plot <- ggplot(data=geih_e , mapping = aes(as.factor(educ_time) , logingtot)
   geom_boxplot() + geom_point(aes(colour=as.factor(gen))) +
   scale_color_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
 box_plot
+
 ##Creo que se puede diferenciar mejor en el boxplot y en el geom_point creo que con solo una estaría bien. 
 
 #En este histograma podemos ver la distribucion del nivel de educacion maximo de la muestra diferenciado por el genero de los encuestados. 
@@ -256,10 +254,6 @@ ggplot(geih_e, aes(x= educ_time)) + geom_bar(width=0.5, colour="blue", fill="ste
 
 #simetría de la variable ingreso: 
 BoxCoxTrans(geih_e$ing)
-
-#Pendiente completar pero en general es cacharrearle, ya no necesita concatenaci?n
-#?tiles: clase del 11 de junio y Intro_to_R (bloque ne?n)
-
 
 
 #####################
