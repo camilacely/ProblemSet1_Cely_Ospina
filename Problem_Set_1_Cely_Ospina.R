@@ -17,6 +17,7 @@ library(rvest)
 library(dplyr)
 library(skimr)
 library(ggplot2)
+library(caret)
 
 #Set
 
@@ -105,6 +106,8 @@ geih18e<-geih18[!(geih18$ocu<1),] #16.542 observaciones #ocu = 1 if occupied, 0 
 edad<-geih18e$age
 educ<-geih18e$maxEducLevel
 gen<-geih18e$sex
+#dplyr::recode(gen, `0`=1,  `1`=0)
+
 
 #Experiencia potencial
 #En la literatura se ha utilizado como proxy de la experiencia la experiencia potencial.
@@ -132,6 +135,7 @@ educ_time<-case_when(educ <= 1 ~ 0,
 exp_potencial<-edad-educ_time-5
 
 tipo_oficio<-geih18e$oficio
+formal<-geih18e$formal
 
 #Notas para m?s adelante (revisemos) 
 #de pronto en los modelos m?s complejos podemos controlar por depto, ya que en las regiones los salarios son distintos
@@ -223,6 +227,8 @@ ggplot(geih18e, aes(x= educ_time)) + geom_bar(width=0.5, colour="blue", fill="st
   facet_wrap(~sex)
 
 
+#simetría de la variable ingreso: 
+BoxCoxTrans(geih18e$ing)
 
 #Pendiente completar pero en general es cacharrearle, ya no necesita concatenaci?n
 #?tiles: clase del 11 de junio y Intro_to_R (bloque ne?n)
