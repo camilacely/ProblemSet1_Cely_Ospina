@@ -243,9 +243,6 @@ ggplot () + geom_boxplot(data=geih_e, aes(x=logingtot), fill ="tomato", alpha=0.
 
 ####Nota: geih_e es una copia de geih18e pero en la que modificamos los valores de ingreso, de ahora en adelante se usara esta
 
-logingtot<-geih_e$logingtot 
-edad<-geih_e$edad
-educ_time<-geih_e$educ_time
 
 #Luego de revisar la muestra se selecciÃ³nan las siguientes variables como X - variables explicativas
 subset2 <- geih_e %>% select(age, sex, maxEducLevel, formal, estrato, oficio)
@@ -314,10 +311,10 @@ ggplot(data = geih_e , mapping = aes(x = age , y = ingtot))+
 
 ols1<-lm(geih_e$ingtot~geih_e$age+geih_e$age2)
 
-ols1prueba<-lm(ing~edad+edad2) #Esto lo corrí para probar si daba lo mismo haciéndolo directo en la base o extrayendo las variables
+ols1prueba<-lm(ing~edad+edad2) #Esto lo corr? para probar si daba lo mismo haci?ndolo directo en la base o extrayendo las variables
 
 ols1
-ols1prueba #sí da lo mismo
+ols1prueba #s? da lo mismo
 
 summary(ols1) #R^2 0.017 #Residual standard error: 2653000 on 16539 degrees of freedom
 
@@ -335,7 +332,7 @@ stargazer(ols1) #salida ols1 en latex #######################################
 #of complex aspects of the relationship between the model and the data.
 
 resid1<-resid(ols1)
-plot(edad,resid1) #este corre pero la presentación no es muy buena
+plot(edad,resid1) #este corre pero la presentaci?n no es muy buena
 
 ggplot(data = geih_e , mapping = aes(x = age , y = resid1))+
   geom_point(col = "red" , size = 0.5) #mejor esta salida #####################
@@ -343,14 +340,14 @@ ggplot(data = geih_e , mapping = aes(x = age , y = resid1))+
 #Interpretacion= if the residuals appear to behave randomly, it suggests that the model fits the data well. 
 #On the other hand, if non-random structure is evident in the residuals, it is a clear sign that the model fits the data poorly.
 #En este caso los valores no parecen comportarse de manera aleatoria pues se acumulan casi todos cerca del valor cero
-#Lo anterior sumado al R^2 de la regresión permite concluir que este modelo no tiene muy buen ajuste con esta muestra
+#Lo anterior sumado al R^2 de la regresi?n permite concluir que este modelo no tiene muy buen ajuste con esta muestra
 #Intuicion= hay otros factores que pesan mucho mas en la distribucion de ingresos que la edad, los exploraremos mas adelante
 
 fit1<-fitted(ols1)
 par(mfrow=c(2,2))
 plot(ols1) #aqui encontramos otros analisis que soportan que este modelo no ajusta tan bien
 
-#Plot predict, aqui encontramos la curvatura de age-income y vemos que aproximadamente tiene un maximo a los 40 años
+#Plot predict, aqui encontramos la curvatura de age-income y vemos que aproximadamente tiene un maximo a los 40 a?os
 
 #esta es una prediccion con una submuestra
 geih_pre<-geih_e
@@ -361,7 +358,7 @@ reg_1<-lm(ingtot~age+age2,geih_pre)
 ggplot(geih_pre , mapping = aes(x = age , y = predict(reg_1))) +
   geom_point(col = "red" , size = 0.5)
 
-#esta es una prediccion con la muestra total, considero que queda mejor porque el peak_age se observa alrededor de 55 años
+#esta es una prediccion con la muestra total, considero que queda mejor porque el peak_age se observa alrededor de 55 a?os
 #lo cual coincide con los resultados matematicos que obtenemos mas adelante
 
 ggplot(geih_e, aes(x=age, y=predict(ols1))) + 
@@ -435,7 +432,7 @@ boot(geih_e, eta.fn, R)
 
 #Standard error: By calculating standard error, you can estimate how representative your sample is of your population and make valid conclusions.
 #A high standard error shows that sample means are widely spread around the population mean-your sample may not closely represent your population. 
-#Como el error estándar aumenta al hacer bootstrap concluimos que puede que tampoco ajusta bien fuera de muestra
+#Como el error est?ndar aumenta al hacer bootstrap concluimos que puede que tampoco ajusta bien fuera de muestra
 
 
 
@@ -454,7 +451,7 @@ peak_agel<--(lower/(2*lower2)) #29.03592
 
 peak_ageu<--(upper/(2*upper2)) #123.779 
 
-#debido a que los errores estandares son tan altos, observamos que el peak_age variaria entre 29 años y 123 años
+#debido a que los errores estandares son tan altos, observamos que el peak_age variaria entre 29 a?os y 123 a?os
 
 
 #####################
@@ -508,7 +505,7 @@ summary(ols1f)
 stargazer(ols1f)
 
 ggplot(geih_ef, aes(x=age, y=predict(ols1f))) + 
-  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 38 años
+  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 38 a?os
 
 #ahora, con subset de solo hombres
 geih_em <- select(filter(geih_e, fem == 0),c(logingtot,age,age2,fem))
@@ -516,13 +513,13 @@ geih_em <- select(filter(geih_e, fem == 0),c(logingtot,age,age2,fem))
 ols1m<-lm(geih_em$logingtot~geih_em$age+geih_em$age2)
 
 ggplot(geih_em, aes(x=age, y=predict(ols1m))) + 
-  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 48 años!
+  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 48 a?os!
 
 #con lo anterior observamos que el peak_age es distinto para hombres y mujeres
 #y ademas observamos que ese peak_age corresponde a ingresos mayores para hombres
 
 
-##ahora vamos a calcular el valor de esos peak_age específicamente
+##ahora vamos a calcular el valor de esos peak_age espec?ficamente
 #Recordar: 
 
 #ols1f<-lm(geih_ef$logingtot~geih_ef$age+geih_ef$age2)
@@ -643,7 +640,6 @@ ols3<-lm(logingtot~age+age2+fem,geih_f) #continua siendo coeficiente fem negativ
 ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
 
 
-
 #analysis, pendiente sacar para los otros modelos relevantes
 
 
@@ -746,8 +742,8 @@ set.seed(123)
 #transormar el ingreso de logaritmo al ingreso estandar  y se genera un indicador lÃ³gico que divida la muestra en train y test. Si esta dentro del 30% verdadero, si no falso
 geih_pe <- geih_pe %>% 
                   mutate (ing=exp(logingtot), 
-                          holdout=as.logical(1:nrow(geih_pe) %in%
-                                               sample(nrow(geih_pe), nrow(geih_pe)*.3))
+                  holdout=as.logical(1:nrow(geih_pe) %in%
+                  sample(nrow(geih_pe), nrow(geih_pe)*.3))
                   )
 
 #Definir las submuestras test y train
@@ -760,19 +756,51 @@ train <-geih_pe[geih_pe$holdout==F,]
 model1<-lm(ing~1,data=train)
 summary (model1)
 
+
+#ii. Estimar los modelos del punto anterior
+
+#NO ESTOY SEGURA PERO CREO QUE SON ESAS
+#ols1<-lm(geih_e$ingtot~geih_e$age+geih_e$age2)
+#ols2<-lm(geih_e$logingtot~geih_e$fem
+#ols3<-lm(logingtot~age+age2+fem,geih_f) #continua siendo coeficiente fem negativo
+#ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
+#ols5<-lm(logingtot~age+age2+fem+oficio,geih_f)
+
+
+#iii.Incluir variables que lo complejisen transformando las X:
+
+model2<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+gen+estrato) 
+model3<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+estrato) 
+model4<-lm(geih_pe$logingtot~educ_time+exp_potencial+poly(exp_potencial,2)+age+age2+gen+estrato) 
+model5<-lm(geih_pe$logingtot~educ_time+exp_potencial+poly(exp_potencial,2)+age+age2+gen+gen:tipo_oficio+estrato) 
+model6<-lm(geih_pe$logingtot~educ_time+exp_potencial+poly(exp_potencial,2)+age+age2+gen+estrato+gen:tipo_oficio+estrato+gen:estrato) 
+
+#iv.Reportar y comparar los MSE de todos los modelos (para comparar un grafico serÃ­a muy explicativo)
+
 #Vamos a predecir FUERA de muestra
 test$model1<-predict(model1,newdata=test)
 with (test, mean((ing-model1)^2))
 
-#ii.Incluir variables que lo complejisan:
+test$model2<-predict(model1,newdata=test)
+with (test, mean((ing-model2)^2))
 
-model2
-model3
-model4 
-model5#<-lm(ing~educ_time+exp_potencial+poly(exp_potencial,3)+gen+gen:tipo_oficio+estrato) aquÃ­ faltarÃ­a la de hijos
-#incluir del punto anterior
+test$model3<-predict(model1,newdata=test)
+with (test, mean((ing-model3)^2))
 
-#iv.ggplot que compare los MRE en los 5 modelos
+test$model4<-predict(model1,newdata=test)
+with (test, mean((ing-model4)^2))
+
+test$model5<-predict(model1,newdata=test)
+with (test, mean((ing-model5)^2))
+
+test$model6<-predict(model1,newdata=test)
+with (test, mean((ing-model6)^2))
+
+
+
+##FALTARÃAN LOS DEL PUNTO ii
+
+
 
 #v. 
 
