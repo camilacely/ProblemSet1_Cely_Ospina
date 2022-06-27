@@ -85,6 +85,7 @@ geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih1
 
 #save(geih, file = "C:/Users/Camila Cely/Documents/GitHub/ProblemSet1_Cely_Ospina/geih.Rdata")
 #load("C:/Users/Camila Cely/Documents/GitHub/ProblemSet1_Cely_Ospina/geih.Rdata")
+#load("C:/Users/SARA/Documents/ESPECIALIZACIÓN/BIG DATA/GITHUB/ProblemSet1_Cely_Ospina/geih.Rdata")
 
 #^Shortcut para cargar la base sin hacer scraping
 
@@ -115,7 +116,7 @@ gen<-geih18e$sex #gen = sex, o sea que valor de 1 corresponde a hombre
 head(geih18e$sex)
 
 #se recodifica la variable genero con el fin de encontrar cual es el efecto de ser mujer, al especificar este como 1 y hombre como 0
-geih18e <- geih18e %>% 
+geih18e   <- geih18e %>% 
   mutate(fem = ifelse(test = sex > 0 , #notar que sex tomaba valor de 1 para hombre
                       yes = 0, 
                       no = 1))
@@ -204,56 +205,89 @@ skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?r
 
 
 #ELECCION DE VARIABLE Y
-geih_e<-geih18e
-ing<-geih18e$ingtot 
-geih_e$ingtot[geih_e$ingtot == 0] <- 1 #se cambian los valores de ingreso 0 a ingreso 1 para que el ln no salga como menos infinito
-geih_e <- geih_e %>% mutate(logingtot = log(ingtot))
-#Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este 
-
-####Nota: geih_e es una copia de geih18e pero en la que modificamos los valores de ingreso, de ahora en adelante se usar� esta
-
-summary(geih_e$ingtot)
-
-logingtot<-geih_e$logingtot 
 #justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
 #Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
+ing<-geih18e$ingtot 
+geih_Y<-geih18e
 
-##obtenemos estadísticas descriptivas de las variables seleccionadas
-#NOTA: HARÍA FALTA EXP_POTENCIAL
+
+#Se evalúa la simetría y distribución de la variable
+geih_Y$ingtot[geih_Y$ingtot == 0] <- 1 #se cambian los valores de ingreso 0 a ingreso 1 para que el ln no salga como menos infinito
+BoxCoxTrans(geih_Y$ingtot)
+
+ggplot () + geom_boxplot(data=geih_Y, aes(x=ingtot), fill ="tomato", alpha=0.5)
+
+geih_Y <- geih_Y %>% mutate(logingtot = log(ingtot))
+summary(geih_Y$logingtot)
+#Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este y mejorar su interpretacion.
+
+ggplot () + geom_boxplot(data=geih_Y, aes(x=logingtot), fill ="tomato", alpha=0.5)
+#Se puede observar que la distribución mejora considerablemente, pero continúan presentandose outliers que modifican el resultado. 
+
+#Resolver outliers: 
+quantile(x=geih_Y$logingtot , na.rm=T)
+#Se puede observar que hay un salto mas grande entre el primer y segundo cuartil 
+
+IQR(x=geih_Y$logingtot , na.rm=T)
+
+#Se utiliza el rango intercuartilico (entre el 25% y el 75% )
+iqr <- IQR(x=geih_Y$logingtot , na.rm=T)
+
+#Modificamos la base para tomar unicamente las observaciones que son iguales o mayores al primer cuartil, de esta forma se descartan 265 observaciones. 
+#se decide descartar estas observaciones pues no tiene sentido que personas que se declararon ocupadas y que reportaron horas trabajadas hayan reportado que su ingreso es = a 0
+geih_e<- geih_Y %>% subset(logingtot >= 1*iqr)
+
+#como se puede observar la variable tiene una mejor distribución
+quantile(x=geih_e$logingtot , na.rm=T)
+ggplot () + geom_boxplot(data=geih_e, aes(x=logingtot), fill ="tomato", alpha=0.5)
+
+####Nota: geih_e es una copia de geih18e pero en la que modificamos los valores de ingreso, de ahora en adelante se usara esta
+
+logingtot<-geih_e$logingtot 
+edad<-geih_e$edad
+educ_time<-geih_e$educ_time
+
+#Luego de revisar la muestra se selecciónan las siguientes variables como X - variables explicativas
 subset2 <- geih_e %>% select(age, sex, maxEducLevel, formal, estrato, oficio)
 skim(subset2)
+#Adicionalmente, se crea la variable de experiencia potencial la cual se comporta de la siguiente forma: 
+summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
 
-##Distribución en densidad de ingreso
+
+##Distribución en densidad de ingreso, variable Y
 d <- ggplot(geih_e, aes(x=logingtot)) + 
   geom_density()
 d+ geom_vline(aes(xintercept=mean(logingtot)),
-              color="blue", linetype="dashed", size=1)
+              color="steelblue", linetype="dashed", size=1.25)
 
-
-#Podemos ver como está distribuido el ingreso de acuerdo con el genero de la persona encuestada. Podemos ver de forma muy introductoria que se presentan outliers.  
+#Podemos ver como está distribuido el ingreso de acuerdo con la edad de la persona encuestada. 
+#podemos observar que los salarios se vuelven mas altos a mayor edad 
 ggplot(data = geih_e , mapping = aes(x = age , y = logingtot))+
-  geom_point(col = "tomato" , size = 0.5)
+  geom_point(col = "tomato" , size = 0.75)
 
+#Distribucion del ingreso de acuerdo con el genero
 p <- ggplot(data=geih_e) + 
-  geom_histogram(bins=30, mapping = aes(x=logingtot , group=as.factor(gen) , fill=as.factor(gen)))
+  geom_histogram(bins=30, mapping = aes(x=logingtot , group=as.factor(fem) , fill=as.factor(fem)))
   
 p + scale_fill_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
 
+#Distribución del ingreso de acuerdo con el nivel de educación diferenciado por genero: 
 box_plot <- ggplot(data=geih_e , mapping = aes(as.factor(educ_time) , logingtot)) + 
-  geom_boxplot() + geom_point(aes(colour=as.factor(gen))) +
+  geom_boxplot() + geom_point(aes(colour=as.factor(fem))) +
   scale_color_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
 box_plot
 
 ##Creo que se puede diferenciar mejor en el boxplot y en el geom_point creo que con solo una estaría bien. 
 
-#En este histograma podemos ver la distribucion del nivel de educacion maximo de la muestra diferenciado por el genero de los encuestados. 
-ggplot(geih_e, aes(x= educ_time)) + geom_bar(width=0.5, colour="blue", fill="steelblue") +  
+#En este histograma podemos ver la distribucion del logaritmo del ingreso contra el nivel de educacion maximo de la muestra diferenciado por el genero de los encuestados. 
+ggplot(geih_e, aes(x= educ_time)) + geom_bar(width=2, colour="steelblue", fill="steelblue1") +  
   geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=5.0)+  
-  facet_wrap(~gen)
+  facet_wrap(~fem)  
 
-
-#simetría de la variable ingreso: 
-BoxCoxTrans(geih_e$ing)
+#En este histograma podemos ver la distribucion del logaritmo del ingreso contra el estrato de las observaciones de la muestra diferenciado por el genero de los encuestados. 
+ggplot(geih_e, aes(x= estrato)) + geom_bar(width=2, colour="steelblue", fill="steelblue1") +  
+  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=5.0)+  
+  facet_wrap(~fem)
 
 
 #####################
@@ -593,7 +627,10 @@ with (test, mean((ing-model1)^2))
 
 #ii.Incluir variables que lo complejisan:
 
-#model#<-lm(ing~educ_time+exp_potencial+poly(exp_potencial,3)+gen+gen:tipo_oficio+depto) aquí faltaría la de hijos
+model2
+model3
+model4 
+model5#<-lm(ing~educ_time+exp_potencial+poly(exp_potencial,3)+gen+gen:tipo_oficio+estrato) aquí faltaría la de hijos
 #incluir del punto anterior
 
 #iv.ggplot que compare los MRE en los 5 modelos
