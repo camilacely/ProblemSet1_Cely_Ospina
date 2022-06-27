@@ -584,10 +584,10 @@ geih_pe <- geih_pe %>%
                   )
 
 #Definir las submuestras test y train
-#podemos utilizar una muestra para entrenar y una para evaluar 
+#podemos utilizar una muestra para entrenar y una para evaluar. 30% de la muestra se va a test y 70% a train
 
 test <-geih_pe[geih_pe$holdout==T,]
-train <-geih_pe[geih_pe$holdout==T,]
+train <-geih_pe[geih_pe$holdout==F,]
 
 #i. modelo que solo incluye una constante: 
 model1<-lm(ing~1,data=train)
@@ -615,14 +615,6 @@ GIH<-data.frame(age=runif(30,18,80))
 GIH<- GIH %>% mutate(age2=age^2,
                      income=rnorm(30,mean=12+0.06*age-0.001*age2))                
 
-for(i 1:dim(GIH)[1]){
-  #Estimate the regression model using all but the i − th observation
-  reg_1<-lm(income~age+age2,GIH[-i,])
-  #Calculate the prediction error for the i − th observation, i.e. (yi − yˆi)
-  y_hat<-predict(reg_1,newdata=GIH[i,])
-  u<-(GIH[i,]$income-y_hat)^2
-}
-
 
 
 #b. repetir usando k-fold
@@ -642,6 +634,15 @@ model1<-train(income~.,                                                     # mo
 model1
 
 #c. repetir usando LOOCV pero solo con un modelo de los 5 planteados
+
+for(i 1:dim(GIH)[1]){
+  #Estimate the regression model using all but the i − th observation
+  reg_1<-lm(income~age+age2,GIH[-i,])
+  #Calculate the prediction error for the i − th observation, i.e. (yi − yˆi)
+  y_hat<-predict(reg_1,newdata=GIH[i,])
+  u<-(GIH[i,]$income-y_hat)^2
+}
+
 
 
 #DE ESTA CLASE NO TOM? APUNTES EN R ENTONCES TOCA BUSCAR EL SCRIPT DIRECTAMENTE EN 
