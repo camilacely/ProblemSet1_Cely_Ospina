@@ -438,10 +438,10 @@ boot(geih_e, eta.fn, R)
 #      original       bias    std. error
 #t1* -391598.363 -538.7261414 229565.4194
 #t2*   89516.853   29.8520719  13126.1386
-#t3*    -771.785   -0.4411129    168.1169 #*******
+#t3*    -771.785   -0.4411129    168.1169 
 
 #Del paquete boot obtenemos coeficiente 89516.853 y en la regresi?n nos daba 91143,460 (se acerca m?s que de la manera manual)
-#De error est?ndar obtenemos 13127 y en la regresi?n daba 8886,41, en ambos casos da mayor que en la regresion sobre muestra
+#De error est?ndar obtenemos 13127 y en la regresi?n daba 8886,41(REVISAR EN LA SALIDA DE LATEX), en ambos casos da mayor que en la regresion sobre muestra
 
 #Standard error: By calculating standard error, you can estimate how representative your sample is of your population and make valid conclusions.
 #A high standard error shows that sample means are widely spread around the population mean-your sample may not closely represent your population. 
@@ -452,19 +452,19 @@ boot(geih_e, eta.fn, R)
 #Ahora construirle los intervalos de confianza al peak_age (57)
 
 #para age
-lower<-b1-1.96*13127.7804 #65413.01 
-upper<-b1+1.96*13127.7804 # 116873.9
-#vemos que este intervalo da muy cercano al que sacamos a mano= entre 62.034 y 115.016
+lower<-b1-1.96*13126.1386 #63789.62 
+upper<-b1+1.96*13126.1386 # 115244.1 
+#vemos que este intervalo da muy cercano al que sacamos a mano= entre 64.385 y 114.331 
 
 #para age2
-lower2<-b2-1.96*166.9154 #-1126.415 
-upper2<-b2+1.96*166.9154 # -472.107 
+lower2<-b2-1.96*166.9154 #-1098.939
+upper2<-b2+1.96*166.9154 # -444.6309 
 
-peak_agel<--(lower/(2*lower2)) #29.03592
+peak_agel<--(lower/(2*lower2)) #29.02327 
 
-peak_ageu<--(upper/(2*upper2)) #123.779 
+peak_ageu<--(upper/(2*upper2)) #129.5952 
 
-#debido a que los errores estandares son tan altos, observamos que el peak_age variaria entre 29 a?os y 123 a?os
+#debido a que los errores estandares son tan altos, observamos que el peak_age variaria entre 29 a?os y 129 a?os
 
 
 #####################
@@ -481,15 +481,15 @@ head(geih_e$fem) #fem toma valor de 1 para individuo mujer
 head(geih_e$ingtot)
 head(geih_e$logingtot)
 
-summary(geih_f$ingtot)
-summary(geih_f$logingtot)
+summary(geih_e$ingtot)
+summary(geih_e$logingtot)
 
 #Plantear modelo
 
 ols2<-lm(geih_e$logingtot~geih_e$fem) #Regresion propuesta en el taller
 ols2 #se corre el modelo y sale coeficiente negativo para mujer
 
-summary(ols2) #R^2 0.009 #Residual standard error: 1.95 on 16540 degrees of freedom
+summary(ols2) #R^2 0.012 #Residual standard error: Residual standard error: 0.8723 on 16275 degrees of freedom (cuando teniamos outliers era 1.95)
 
 require("stargazer")
 stargazer(ols2) ############## salida ols2 en latex #############
@@ -498,7 +498,7 @@ resid2<-resid(ols2)
 plot(edad,resid2)
 
 ggplot(data = geih_e , mapping = aes(x = age , y = resid2))+
-  geom_point(col = "red" , size = 0.5) #aqui tambien observamos que los datos no se distribuyen aleatoriamente
+  geom_point(col = "red" , size = 0.5) #aqui tambien observamos que los datos no se distribuyen aleatoriamente pero mejoran mucho comparado que cuando teniamos outliers
 
 fit2<-fitted(ols2)
 par(mfrow=c(2,2))
@@ -514,16 +514,19 @@ geih_ef <- select(filter(geih_e, fem == 1),c(logingtot,age,age2,fem))
 
 ols1f<-lm(geih_ef$logingtot~geih_ef$age+geih_ef$age2)
 
-summary(ols1f)
+summary(ols1f) #r^2= 0.023
 stargazer(ols1f)
 
 ggplot(geih_ef, aes(x=age, y=predict(ols1f))) + 
-  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 38 a?os
+  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 40 a?os
 
 #ahora, con subset de solo hombres
 geih_em <- select(filter(geih_e, fem == 0),c(logingtot,age,age2,fem))
 
 ols1m<-lm(geih_em$logingtot~geih_em$age+geih_em$age2)
+
+summary(ols1m) #r^2= 0.045
+stargazer(ols1m)
 
 ggplot(geih_em, aes(x=age, y=predict(ols1m))) + 
   geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 48 a?os!
@@ -557,7 +560,7 @@ b1f<-coefs1f[2]
 b2f<-coefs1f[3]
 
 peak_agef<--(b1f/(2*b2f))
-# peak_agef = 38.36033 
+# peak_agef = 39.76167
 
 
 #para hombres
@@ -569,7 +572,7 @@ b1m<-coefs1m[2]
 b2m<-coefs1m[3]
 
 peak_agem<--(b1m/(2*b2m))
-# peak_agem = 46.13437    #comprobamos que si es mayor el peak age para hombres
+# peak_agem = 48.35461    #comprobamos que si es mayor el peak age para hombres
  
 
 #resampleo con bootstrap
@@ -588,24 +591,25 @@ eta.fnf<-function(geih_ef,index){
 boot(geih_ef, eta.fnf, R) 
 
 #Bootstrap Statistics :
-#       original         bias      std. error
-#t1* 12.2498610538 -1.548363e-02 0.2627417683
-#t2*  0.0766266111  7.090594e-04 0.0138332099
-#t3* -0.0009987742 -7.878057e-06 0.0001691201
+#        original        bias     std. error
+#t1* 12.8497894303 -5.092648e-03 9.977185e-02
+#t2*  0.0574768216  3.038761e-04 5.297921e-03
+#t3* -0.0007227667 -4.072150e-06 6.500539e-05
 
 
 #intervalos de confianza al peak_age de mujeres (38)
 
 #para age
-lowerf<-b1f-1.96*0.0138332099 # 0.04951352 
-upperf<-b1f+1.96*0.0138332099 # 0.1037397 
+lowerf<-b1f-1.96*5.297921e-03 # 0.0470929 
+upperf<-b1f+1.96*5.297921e-03 # 0.06786075  
 
 #para age2
-lower2f<-b2f-1.96*0.0001691201 # -0.00133025 
-upper2f<-b2f+1.96*0.0001691201 # -0.0006672988 
+lower2f<-b2f-1.96*0.0001691201 # -0.001054242 
+upper2f<-b2f+1.96*0.0001691201 # -0.0003912913 
  
-peak_agelf<--(lowerf/(2*lower2f)) # 18.61061 
-peak_ageuf<--(upperf/(2*upper2f)) # 77.73107  #nuevamente notamos que los intervalos de confianza son demasiado amplios
+peak_agelf<--(lowerf/(2*lower2f)) # 22.33495  
+peak_ageuf<--(upperf/(2*upper2f)) # 86.71385   #nuevamente notamos que los intervalos de confianza son demasiado amplios
+
 
 #bootstrap para hombres
 
@@ -620,51 +624,74 @@ eta.fnm<-function(geih_em,index){
 boot(geih_em, eta.fnm, R) 
 
 #Bootstrap Statistics :
-#       original        bias     std. error
-#t1* 11.834482235 -7.332659e-03 0.2191473245
-#t2*  0.101993661  3.905666e-04 0.0113619185
-#t3* -0.001105398 -4.933092e-06 0.0001362664
+#        original        bias     std. error
+#t1* 12.6392737877 -2.054551e-03 9.046846e-02
+#t2*  0.0665319340  1.166231e-04 4.872507e-03
+#t3* -0.0006879586 -1.758050e-06 5.953093e-05
 
 #intervalos de confianza al peak_age de hombres (46)
 
 #para age
-lowerm<-b1m-1.96*0.0113619185 # 0.0797243 
-upperm<-b1m+1.96*0.0113619185 # 0.124263 
+lowerm<-b1m-1.96*4.872507e-03 # 0.05698182
+upperm<-b1m+1.96*4.872507e-03 # 0.07608205 
 
 #para age2
-lower2m<-b2m-1.96*0.0001362664 # -0.00137248
-upper2m<-b2m+1.96*0.0001362664 # -0.0008383156 
+lower2m<-b2m-1.96*5.953093e-05 # -0.0008046392 
+upper2m<-b2m+1.96*5.953093e-05 # -0.000571278
 
-peak_agelm<--(lowerm/(2*lower2m)) # 29.04389
-peak_ageum<--(upperm/(2*upper2m)) # 74.1147 
+peak_agelm<--(lowerm/(2*lower2m)) # 35.4083
+peak_ageum<--(upperm/(2*upper2m)) # 66.58934
+
+#peak mujeres= entre 22 y 86 años
+#peak hombres= entre 35 y 66 años
 
 #notamos que los intervalos de hombres y de mujeres si tienen overlap,
 #en todo caso la edad peak de mujeres continua siendo menor que la de hombres
 #los intervalos de confianza son demasiado grandes 
+#para el caso de los hombres el intervalo de confianza es mas acotado, esto daria cuenta de que los datos para los hombres tienen mejor ajuste
+#lo anterior lo comprobamos al ver que el r^2 del modelo de solo mujeres es de 0.23
+#y el de solo hombres es de 0.45 
+#quiere decir que en el caso de las mujeres se requieren aun mas variables explicativas que en el caso de los hombres para explicar el ingreso
 
 
 
 ###Incorporate control variables
 
+#Modelos adicionales 
 
-#pruebas
-geih_f$age2<-geih_f$age^2 
-ols3<-lm(logingtot~age+age2+fem,geih_f) #continua siendo coeficiente fem negativo
-ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
+#recordar que las variables que elegimos inicialmente fueron:
+#("age","sex","maxEducLevel", "formal", "estrato", "oficio")] y exp_potencial
 
+#Primer modelo: el mismo de age y age2, pero incorporandole la variable fem (porque en el punto anterior lo que hicimos fue dividir la muestra)
 
-#analysis, pendiente sacar para los otros modelos relevantes
+ols3<-lm(logingtot~age+age2+fem,geih_e) #coeficiente fem negativo
+summary(ols3) #r^2= 0.037
+stargazer(ols3)
 
+#siguiente modelo: incorporando educacion 
+ols4<-lm(logingtot~age+age2+fem+maxEducLevel,geih_e) #coeficiente fem negativo, el coef de edad baja porque el de educ es positivo
+summary(ols4) #r^2= 0.21 #el r^2 mejora mucho
+stargazer(ols4)
 
-########variables de control, pendiente completar
+#siguiente modelo: controlamos por oficio
+ols5<-lm(logingtot~age+age2+fem+maxEducLevel+oficio,geih_e) #la interpretacion de oficio no es clara porque es categorica, pero lo que importa 
+#es que ayuda a explicar mejor el modelo y los coeficientes de las otras variables se continuan comportando segun lo esperado
+summary(ols5) #r^2= 0.26 #el r^2 continua mejorando
+stargazer(ols5)
 
-summary(geih_f$oficio)
-as.factor(geih_f$oficio)
-ols5<-lm(logingtot~age+age2+fem+oficio,geih_f)
-summary(ols5)
+#siguiente modelo: ver si el trabajo formal implica mejores ingresos
+ols6<-lm(logingtot~age+age2+fem+maxEducLevel+oficio+formal,geih_e)
+summary(ols6) #r^2= 0.36 #el r^2 continua mejorando y efectivamente el trabajo formal implica mayor ingreso
+stargazer(ols6)
 
+#siguiente modelo: ver como se comporta con la variable estrato
+ols7<-lm(logingtot~age+age2+fem+maxEducLevel+oficio+formal+estrato,geih_e)
+summary(ols7) #r^2 aumenta a 0.44 y la variable de estrato es significativa
+#nota: hay que tener cuidado porque estrato podria ser una variable endogena (menor ingreso lleva a elegir menor estrato de residencia)
+#sin embargo vivir en barrios de menores estratos puede estar generando dificultad de acceso a trabajos mejor pagos
+stargazer(ols7) 
 
-
+        
 #FWL para sacar las variables de control pero teoricamente nos debe dar lo mismo
 
 ##########
