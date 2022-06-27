@@ -107,23 +107,67 @@ oc<-geih18$ocu
 ########Base final elegida= geih18e#################
 
 
+
+
+#ELECCION DE VARIABLE Y
+#justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
+#Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
+ing<-geih18e$ingtot 
+geih_Y<-geih18e #se le saca copia a la base para modificarle lo pertinente en variable Y
+
+
+#Se evalúa la simetría y distribución de la variable
+geih_Y$ingtot[geih_Y$ingtot == 0] <- 1 #se cambian los valores de ingreso 0 a ingreso 1 para que el ln no salga como menos infinito
+BoxCoxTrans(geih_Y$ingtot)
+
+ggplot () + geom_boxplot(data=geih_Y, aes(x=ingtot), fill ="tomato", alpha=0.5)
+
+geih_Y <- geih_Y %>% mutate(logingtot = log(ingtot))
+summary(geih_Y$logingtot)
+
+#Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este y mejorar su interpretacion.
+
+ggplot () + geom_boxplot(data=geih_Y, aes(x=logingtot), fill ="tomato", alpha=0.5)
+#Se puede observar que la distribución mejora considerablemente, pero continúan presentandose outliers que modifican el resultado. 
+
+#Resolver outliers: 
+quantile(x=geih_Y$logingtot , na.rm=T)
+#Se puede observar que hay un salto mas grande entre el primer y segundo cuartil 
+
+IQR(x=geih_Y$logingtot , na.rm=T)
+
+#Se utiliza el rango intercuartilico (entre el 25% y el 75% )
+iqr <- IQR(x=geih_Y$logingtot , na.rm=T)
+
+#Modificamos la base para tomar unicamente las observaciones que son iguales o mayores al primer cuartil, de esta forma se descartan 265 observaciones. 
+#se decide descartar estas observaciones pues no tiene sentido que personas que se declararon ocupadas y que reportaron horas trabajadas hayan reportado que su ingreso es = a 0
+geih_e<- geih_Y %>% subset(logingtot >= 1*iqr) #corre bien
+
+#como se puede observar la variable tiene una mejor distribución
+quantile(x=geih_e$logingtot , na.rm=T)
+ggplot () + geom_boxplot(data=geih_e, aes(x=logingtot), fill ="tomato", alpha=0.5)
+
+##A PARTIR DE AQUI geih_e
+####Nota: geih_e es una copia de geih18e pero en la que modificamos los valores de ingreso, de ahora en adelante se usara esta
+
+
 #ELECCION DE VARIABLES EXPLICATIVAS RELEVANTES (X)
 
-edad<-geih18e$age
-educ<-geih18e$maxEducLevel
-gen<-geih18e$sex #gen = sex, o sea que valor de 1 corresponde a hombre
+edad<-geih_e$age
+educ<-geih_e$maxEducLevel
+gen<-geih_e$sex #gen = sex, o sea que valor de 1 corresponde a hombre
 
-head(geih18e$sex)
+head(geih_e$sex)
 
 #se recodifica la variable genero con el fin de encontrar cual es el efecto de ser mujer, al especificar este como 1 y hombre como 0
-geih18e   <- geih18e %>% 
+geih_e   <- geih_e %>% 
   mutate(fem = ifelse(test = sex > 0 , #notar que sex tomaba valor de 1 para hombre
                       yes = 0, 
                       no = 1))
 
-head(geih18e$fem)  #fem toma valor de 1 para individuo mujer #si comparamos este head con el de sex vemos que se invierte
+head(geih_e$fem)  #fem toma valor de 1 para individuo mujer #si comparamos este head con el de sex vemos que se invierte
 
-fem<-geih18e$fem 
+fem<-geih_e$fem 
 
 #se incluye la variable de Experiencia potencial
 #En la literatura se ha utilizado como proxy de la experiencia la experiencia potencial.
@@ -146,108 +190,81 @@ educ_time<-case_when(educ <= 1 ~ 0,
                      educ <= 5 ~ 7.5,
                      educ <= 6 ~ 12,
                      educ <= 7 ~ 17,
-                     educ <= 9 ~ 0,) ##Nota, pendiente usar esto para sacar promedios e imputar valores a los que reportan ingresos de cero
-  
+                     educ <= 9 ~ 0,) 
+
 exp_potencial<-edad-educ_time-5
 
-tipo_oficio<-geih18e$oficio
+tipo_oficio<-geih_e$oficio
 tipo_oficio<-as.factor(tipo_oficio)
-formal<-geih18e$formal
-estrato<-geih18e$estrato
+formal<-geih_e$formal
+estrato<-geih_e$estrato
 estrato<-as.factor(estrato)
 
 
 #Missing values analysis
 
 #Para la base < 18
-is.na(geih18e)
-colSums(is.na(geih18e))
-colSums(is.na(geih18))>0
-colnames(geih18e)[colSums(is.na(geih18e))>0] #Aqu? nos aparecen los nombres de las columnas que tienen missing values
+is.na(geih_e)
+colSums(is.na(geih_e))
+colSums(is.na(geih_e))>0
+colnames(geih_e)[colSums(is.na(geih_e))>0] #Aqu? nos aparecen los nombres de las columnas que tienen missing values
 
 #Ahora analizando las variables que escogimos como explicativas
 #edad, educ, gen, exp_potencial
 
-is.na(geih18e$age) 
-sum(is.na(geih18e$age)) #no hay missing values
+is.na(geih_e$age) 
+sum(is.na(geih_e$age)) #no hay missing values
 
-is.na(geih18e$maxEducLevel) 
-sum(is.na(geih18e$maxEducLevel)) #1 missing value
+is.na(geih_e$maxEducLevel) 
+sum(is.na(geih_e$maxEducLevel)) #1 missing value
 
-is.na(geih18e$sex) 
-sum(is.na(geih18e$sex)) #no hay missing values
+is.na(geih_e$sex) 
+sum(is.na(geih_e$sex)) #no hay missing values
 
 is.na(exp_potencial) 
 sum(is.na(exp_potencial)) #Como esta variable depende de edad y de maxEducLevel, tiene 1 missing value
 
 #Este unico missing value no representa problemas en una muestra de mas de 16000 observaciones
 
-dim(geih18e)
-str(geih18e)
-names(geih18e)
+dim(geih_e)
+str(geih_e)
+names(geih_e)
 
-head(geih18e[,c("age","maxEducLevel","sex")])
-tail(geih18e[,c("age","maxEducLevel","sex")])
+head(geih_e[,c("age","maxEducLevel","sex")])
+tail(geih_e[,c("age","maxEducLevel","sex")])
 
-summary(geih18e$sex)
+summary(geih_e$sex)
 
-summary(geih18e$age) #el 75% de los encuestados tiene menos de 50 a?os
+summary(geih_e$age) #el 75% de los encuestados tiene menos de 50 a?os
 
-as.factor(geih18e$maxEducLevel)
-summary(geih18e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica -> 1 missing 
+as.factor(geih_e$maxEducLevel)
+summary(geih_e$maxEducLevel) #Este sum no tiene mucho sentido porque es variable categ?rica -> 1 missing 
 summary(educ_time) #en promedio, las personas encuestadas tienen 12,42 a?os de educaci?n (secundaria completa)
-summary(geih18e$sex) #53% de los encuestados son hombres
+summary(geih_e$sex) #53% de los encuestados son hombres
 summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
 
-skim(geih18e) #Esto saca estad?sticas de todas las variables pero la base tiene muchas columnas, por lo cual crear? un subset
-subset <- geih18e %>% select(age, maxEducLevel, sex)
+as.factor(geih_e$estrato)
+as.factor(geih_e$oficio)
+
+summary(geih_e$estrato) #75% de los encuestados viven en estrato 1, 2 o 3
+summary(geih_e$oficio) #categorica, no se pueden sacar conclusiones con summary
+summary(geih_e$formal) #59% de los encuestados tienen trabajo formal
+
+
+skim(geih_e) #Esto saca estad?sticas de todas las variables pero la base tiene muchas columnas, por lo cual crear? un subset
+subset <- geih_e %>% select(age, maxEducLevel, sex)
 skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?ricas
 
 
-#ELECCION DE VARIABLE Y
-#justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
-#Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
-ing<-geih18e$ingtot 
-geih_Y<-geih18e
+#Luego de revisar la muestra se seleccionan las siguientes variables como X - variables explicativas
 
 
-#Se evalúa la simetría y distribución de la variable
-geih_Y$ingtot[geih_Y$ingtot == 0] <- 1 #se cambian los valores de ingreso 0 a ingreso 1 para que el ln no salga como menos infinito
-BoxCoxTrans(geih_Y$ingtot)
+subset2 <- geih_e[which(geih_e$sex == 1 | geih_e$sex == 0 ),names(geih_e) %in% c("age","sex","maxEducLevel", "formal", "estrato", "oficio")]
 
-ggplot () + geom_boxplot(data=geih_Y, aes(x=ingtot), fill ="tomato", alpha=0.5)
-
-geih_Y <- geih_Y %>% mutate(logingtot = log(ingtot))
-summary(geih_Y$logingtot)
-#Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este y mejorar su interpretacion.
-
-ggplot () + geom_boxplot(data=geih_Y, aes(x=logingtot), fill ="tomato", alpha=0.5)
-#Se puede observar que la distribución mejora considerablemente, pero continúan presentandose outliers que modifican el resultado. 
-
-#Resolver outliers: 
-quantile(x=geih_Y$logingtot , na.rm=T)
-#Se puede observar que hay un salto mas grande entre el primer y segundo cuartil 
-
-IQR(x=geih_Y$logingtot , na.rm=T)
-
-#Se utiliza el rango intercuartilico (entre el 25% y el 75% )
-iqr <- IQR(x=geih_Y$logingtot , na.rm=T)
-
-#Modificamos la base para tomar unicamente las observaciones que son iguales o mayores al primer cuartil, de esta forma se descartan 265 observaciones. 
-#se decide descartar estas observaciones pues no tiene sentido que personas que se declararon ocupadas y que reportaron horas trabajadas hayan reportado que su ingreso es = a 0
-geih_e<- geih_Y %>% subset(logingtot >= 1*iqr)
-
-#como se puede observar la variable tiene una mejor distribución
-quantile(x=geih_e$logingtot , na.rm=T)
-ggplot () + geom_boxplot(data=geih_e, aes(x=logingtot), fill ="tomato", alpha=0.5)
-
-####Nota: geih_e es una copia de geih18e pero en la que modificamos los valores de ingreso, de ahora en adelante se usara esta
-
-
-#Luego de revisar la muestra se selecciónan las siguientes variables como X - variables explicativas
-subset2 <- geih_e %>% select(age, sex, maxEducLevel, formal, estrato, oficio)
 skim(subset2)
-#Adicionalmente, se crea la variable de experiencia potencial la cual se comporta de la siguiente forma: 
+
+#Adicionalmente, se creo la variable de experiencia potencial la cual se comporta de la siguiente forma: 
+
 summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
 
 
