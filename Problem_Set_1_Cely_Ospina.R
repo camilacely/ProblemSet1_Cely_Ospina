@@ -285,7 +285,7 @@ ols1prueba<-lm(ing~edad+edad2) #Esto lo corrí para probar si daba lo mismo hacié
 ols1
 ols1prueba #sí da lo mismo
 
-summary(ols1) #R^2 0.017
+summary(ols1) #R^2 0.017 #Residual standard error: 2653000 on 16539 degrees of freedom
 
 #r^2 = fraction of the total variability in the response that is accounted for by the model
 
@@ -293,7 +293,7 @@ summary(ols1) #R^2 0.017
 #Edad^2 tiene coeficiente negativo, por lo cual sabemos que esta funci?n no es lineal sino decreciente
 
 require("stargazer")
-stargazer(ols1) #Sale la tabla en .tex #######################################
+stargazer(ols1) #salida ols1 en latex #######################################
 
 #There are many statistical tools for model validation,
 #but the primary tool for most process modeling applications is graphical residual analysis.
@@ -317,6 +317,8 @@ par(mfrow=c(2,2))
 plot(ols1) #aqui encontramos otros analisis que soportan que este modelo no ajusta tan bien
 
 #Plot predict, aqui encontramos la curvatura de age-income y vemos que aproximadamente tiene un maximo a los 40 años
+
+#esta es una prediccion con una submuestra
 geih_pre<-geih_e
 geih_pre<-data.frame(age=runif(30,18,80))
 geih_pre<- geih_pre %>% mutate(age2=age^2,
@@ -324,6 +326,13 @@ geih_pre<- geih_pre %>% mutate(age2=age^2,
 reg_1<-lm(ingtot~age+age2,geih_pre)
 ggplot(geih_pre , mapping = aes(x = age , y = predict(reg_1))) +
   geom_point(col = "red" , size = 0.5)
+
+#esta es una prediccion con la muestra total, considero que queda mejor porque el peak_age se observa alrededor de 55 años
+#lo cual coincide con los resultados matematicos que obtenemos mas adelante
+
+ggplot(geih_e, aes(x=age, y=predict(ols1))) + 
+  geom_point(col = "red" , size = 0.5)
+
 
 ##### Para proyectar peak-age
 
@@ -414,103 +423,194 @@ peak_ageu<--(upper/(2*upper2)) #123.779
 #debido a que los errores estandares son tan altos, observamos que el peak_age variaria entre 29 años y 123 años
 
 
-
-
-
-
 #####################
 # 4. The earnings gap
 #####################
 
 #Estimate the unconditional earnings gap
 
-geih_f<-geih18e
+#comprobar que esta bien creada la variable fem
+head(geih_e$sex) #sex toma valor de 1 para individuo hombre
+head(geih_e$fem) #fem toma valor de 1 para individuo mujer
 
-geih_f <- geih_f %>% 
-  mutate(fem = ifelse(test = sex > 0 , 
-                            yes = 0, 
-                            no = 1))
+#variables ingtot y logingtot
+head(geih_e$ingtot)
+head(geih_e$logingtot)
 
-summary(geih_f$sex, geih_f$fem)
-head(geih_f$fem)  #fem toma valor de 1 para individuo mujer
-head(geih_f$sex)  #sex toma valor de 1 para individuo hombre
-
-geih_f$ingtot[geih_f$ingtot == 0] <- 1
-geih_f <- geih_f %>% mutate(logingtot = log(ingtot))
-
-logingtot<-geih_f$logingtot  
-
-head(geih_f$ingtot)
-head(geih_f$logingtot)
 summary(geih_f$ingtot)
 summary(geih_f$logingtot)
 
-ols2<-lm(geih_f$logingtot~geih_f$fem) #Regresi?n propuesta en el taller
-ols2
-ols2<-lm(geih_f$logingtot~geih_f$fem) #Regresi?n propuesta en el taller
+#Plantear modelo
+
+ols2<-lm(geih_e$logingtot~geih_e$fem) #Regresion propuesta en el taller
 ols2 #se corre el modelo y sale coeficiente negativo para mujer
 
+summary(ols2) #R^2 0.009 #Residual standard error: 1.95 on 16540 degrees of freedom
 
-summary(ols2) #R^2 0.009
 require("stargazer")
-stargazer(ols2)
+stargazer(ols2) ############## salida ols2 en latex #############
+
+resid2<-resid(ols2)
+plot(edad,resid2)
+
+ggplot(data = geih_e , mapping = aes(x = age , y = resid2))+
+  geom_point(col = "red" , size = 0.5) #aqui tambien observamos que los datos no se distribuyen aleatoriamente
+
+fit2<-fitted(ols2)
+par(mfrow=c(2,2))
+plot(ols2) #no tiene buen ajuste
+
+
+#####predict by gender
+
+#lo voy a plantear sacando dos predicts distintos, uno por cada genero, y los compararemos
+
+#primero, con subset de solo mujeres
+geih_ef <- select(filter(geih_e, fem == 1),c(logingtot,age,age2,fem))
+
+ols1f<-lm(geih_ef$logingtot~geih_ef$age+geih_ef$age2)
+
+summary(ols1f)
+stargazer(ols1f)
+
+ggplot(geih_ef, aes(x=age, y=predict(ols1f))) + 
+  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 38 años
+
+#ahora, con subset de solo hombres
+geih_em <- select(filter(geih_e, fem == 0),c(logingtot,age,age2,fem))
+
+ols1m<-lm(geih_em$logingtot~geih_em$age+geih_em$age2)
+
+ggplot(geih_em, aes(x=age, y=predict(ols1m))) + 
+  geom_point(col = "red" , size = 0.5) #aqui vemos que la peak_age se observa hacia los 48 años!
+
+#con lo anterior observamos que el peak_age es distinto para hombres y mujeres
+#y ademas observamos que ese peak_age corresponde a ingresos mayores para hombres
+
+
+##ahora vamos a calcular el valor de esos peak_age específicamente
+#Recordar: 
+
+#ols1f<-lm(geih_ef$logingtot~geih_ef$age+geih_ef$age2)
+#ols1m<-lm(geih_em$logingtot~geih_em$age+geih_em$age2)
+#se plantean igual pero recordar que no usan los mismos datos porque tenemos datos filtrados por genero
+
+
+#derivada de ingtot con respecto a la edad
+# b1 + b2*edad*2
+#entonces edad***
+# edad*** = -b1 / 2*b2 ######
+#b1 es el de edad y b2 el de edad^2
+
+#sacamos los coeficientes de las regresiones que corrimos
+
+#para mujeres
+coefs1f<-ols1f$coefficients 
+coefs1f
+
+b0f<-coefs1f[1]
+b1f<-coefs1f[2]
+b2f<-coefs1f[3]
+
+peak_agef<--(b1f/(2*b2f))
+# peak_agef = 38.36033 
+
+
+#para hombres
+coefs1m<-ols1m$coefficients 
+coefs1m
+
+b0m<-coefs1m[1]
+b1m<-coefs1m[2]
+b2m<-coefs1m[3]
+
+peak_agem<--(b1m/(2*b2m))
+# peak_agem = 46.13437    #comprobamos que si es mayor el peak age para hombres
+ 
+
+#resampleo con bootstrap
+require("boot")
+
+#bootstrap para mujeres
+
+set.seed(123)
+R<-1000
+
+eta.fnf<-function(geih_ef,index){
+  coef(lm(logingtot~age+age2, data = geih_ef, subset = index))
+}
+
+
+boot(geih_ef, eta.fnf, R) 
+
+#Bootstrap Statistics :
+#       original         bias      std. error
+#t1* 12.2498610538 -1.548363e-02 0.2627417683
+#t2*  0.0766266111  7.090594e-04 0.0138332099
+#t3* -0.0009987742 -7.878057e-06 0.0001691201
+
+
+#intervalos de confianza al peak_age de mujeres (38)
+
+#para age
+lowerf<-b1f-1.96*0.0138332099 # 0.04951352 
+upperf<-b1f+1.96*0.0138332099 # 0.1037397 
+
+#para age2
+lower2f<-b2f-1.96*0.0001691201 # -0.00133025 
+upper2f<-b2f+1.96*0.0001691201 # -0.0006672988 
+ 
+peak_agelf<--(lowerf/(2*lower2f)) # 18.61061 
+peak_ageuf<--(upperf/(2*upper2f)) # 77.73107  #nuevamente notamos que los intervalos de confianza son demasiado amplios
+
+#bootstrap para hombres
+
+set.seed(123)
+R<-1000
+
+eta.fnm<-function(geih_em,index){
+  coef(lm(logingtot~age+age2, data = geih_em, subset = index))
+}
+
+
+boot(geih_em, eta.fnm, R) 
+
+#Bootstrap Statistics :
+#       original        bias     std. error
+#t1* 11.834482235 -7.332659e-03 0.2191473245
+#t2*  0.101993661  3.905666e-04 0.0113619185
+#t3* -0.001105398 -4.933092e-06 0.0001362664
+
+#intervalos de confianza al peak_age de hombres (46)
+
+#para age
+lowerm<-b1m-1.96*0.0113619185 # 0.0797243 
+upperm<-b1m+1.96*0.0113619185 # 0.124263 
+
+#para age2
+lower2m<-b2m-1.96*0.0001362664 # -0.00137248
+upper2m<-b2m+1.96*0.0001362664 # -0.0008383156 
+
+peak_agelm<--(lowerm/(2*lower2m)) # 29.04389
+peak_ageum<--(upperm/(2*upper2m)) # 74.1147 
+
+#notamos que los intervalos de hombres y de mujeres si tienen overlap,
+#en todo caso la edad peak de mujeres continua siendo menor que la de hombres
+#los intervalos de confianza son demasiado grandes 
+
+
+
+###Incorporate control variables
+
 
 #pruebas
 geih_f$age2<-geih_f$age^2 
 ols3<-lm(logingtot~age+age2+fem,geih_f) #continua siendo coeficiente fem negativo
 ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
 
-#predict by gender (pendiente terminar)
-geih_igf<-geih18e
-geih_igf<-data.frame(age=runif(30,18,80),fem=runif(30,18,80)) ##PENDIENTE SACAR ESTO PORQUE NO SALE BIEN Y NO ENTIENDO EL CODIGO
-geih_igf<- geih_igf %>% mutate(age2=age^2,
-                             
-                             ingtot=rnorm(30,mean=12+0.06*age-0.001*age2)) #aqui crea ingtot en esta submuestra 
-reg_2<-lm(ingtot~age+age2+fem,geih_ig)
-ggplot(geih_ig , mapping = aes(x = age , y = predict(reg_2))) +
-  geom_point(col = "red" , size = 0.5)
+
 
 #analysis, pendiente sacar para los otros modelos relevantes
-
-resid2<-resid(ols2)
-plot(edad,resid2)
-
-ggplot(data = geih_f , mapping = aes(x = age , y = resid2))+
-  geom_point(col = "red" , size = 0.5)
-
-fit2<-fitted(ols2)
-par(mfrow=c(2,2))
-plot(ols2)
-
-ggplot(data = geih_f , mapping = aes(x = age , y = logingtot))+
-  geom_point(col = "red" , size = 0.5)
-
-ggplot(data = geih_f , mapping = aes(x = age , y = logingtot))+
-  geom_point(col = "red" , size = 0.5) + stat_smooth(method= "lm", col="red")
-
-
-#bootstrap
-
-require("boot")
-set.seed(123)
-R<-1000
-
-eta.fnf<-function(geih_f,index){
-  coef(lm(logingtot~age+age2+fem, data = geih_f, subset = index))
-}
-
-
-boot(geih_f, eta.fnf, R) 
-
-#Bootstrap Statistics :
-#       original        bias     std. error
-#t1* 12.244988312  5.444330e-03 0.1683361961
-#t2*  0.088162861 -2.915204e-04 0.0087396536
-#t3* -0.001027477  3.550194e-06 0.0001055477
-#t4* -0.398860921  1.291200e-03 0.0307740015
-
-#^esto da muy parecido a la regresion ols3 entonces lo que hay que hacer es nuevamente comparar los std. errors
-
 
 
 ########variables de control, pendiente completar
@@ -678,7 +778,5 @@ for(i 1:dim(GIH)[1]){
 
 
 
-#DE ESTA CLASE NO TOM? APUNTES EN R ENTONCES TOCA BUSCAR EL SCRIPT DIRECTAMENTE EN 
-#Semana 2 - W2_02_Overfit_CrossVal
 
 
