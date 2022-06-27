@@ -81,10 +81,12 @@ temp<-read_html(url10)%>%html_table()
 GEIH10 <- rbind (GEIH10, temp)
 geih10 <- rename(GEIH10, X1.3218="X1.3217")
 
-geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih10) #31.177 observaciones
+geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih10) #32.177 observaciones
 
 #save(geih, file = "C:/Users/Camila Cely/Documents/GitHub/ProblemSet1_Cely_Ospina/geih.Rdata")
 #load("C:/Users/Camila Cely/Documents/GitHub/ProblemSet1_Cely_Ospina/geih.Rdata")
+
+#^Shortcut para cargar la base sin hacer scraping
 
 
 #####################
@@ -96,25 +98,29 @@ geih<-rbind(geih1, geih2, geih3, geih4, geih5, geih6, geih7, geih8, geih9, geih1
 geih18<-geih[!(geih$age<18),] #24.568 observaciones
 
 #Focus on employed individuals
-oc<-geih18$ocu
+
 geih18e<-geih18[!(geih18$ocu<1),] #16.542 observaciones #ocu = 1 if occupied, 0 otherwise
 
-#Base final elegida= geih18e
+oc<-geih18$ocu
+
+########Base final elegida= geih18e#################
 
 #ELECCION DE VARIABLES EXPLICATIVAS RELEVANTES (X)
+
 
 edad<-geih18e$age
 educ<-geih18e$maxEducLevel
 gen<-geih18e$sex
 
+head(geih18e$sex)
+
 #se recodifica la variable genero con el fin de encontrar cual es el efecto de ser mujer, al especificar este como 1 y hombre como 0
 geih18e <- geih18e %>% 
-  mutate(fem = ifelse(test = gen > 0 , 
+  mutate(fem = ifelse(test = sex > 0 , #notar que sex tomaba valor de 1 para hombre
                       yes = 0, 
                       no = 1))
 
-head(geih18e$gen)  #gen toma valor de 1 para individuo mujer 0 para individuo hombre
-
+head(geih18e$fem)  #fem toma valor de 1 para individuo mujer #si comparamos este head con el de sex vemos que se invierte
 
 
 #
