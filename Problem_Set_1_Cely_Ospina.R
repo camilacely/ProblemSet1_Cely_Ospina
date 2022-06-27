@@ -115,10 +115,7 @@ geih18e <- geih18e %>%
 
 head(geih18e$gen)  #gen toma valor de 1 para individuo mujer 0 para individuo hombre
 
-#Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este 
-geih18e <- geih18e %>% mutate(logingtot = log(ingtot))
-head(geih18e$ingtot)
-head(geih18e$logingtot)
+
 
 #
 is.na(geih_f$logingtot)
@@ -205,42 +202,54 @@ skim(geih18e) #Esto saca estad?sticas de todas las variables pero la base tiene 
 subset <- geih18e %>% select(age, maxEducLevel, sex)
 skim(subset) #En todo caso no dice mucho porque dos de las variables son categ?ricas
 
-#se define la variable Y
+#ELECCION DE VARIABLE Y
+geih_e<-geih18e
 ing<-geih18e$ingtot 
-summary(geih18e$ing)
+geih_e$ingtot[geih_e$ingtot == 0] <- 1
+geih_e <- geih_e %>% mutate(logingtot = log(ingtot))
+#Se toma el logaritmo del ingreso con el fin de normalizar la distribución de este 
+
+summary(geih18e$ingtot)
+
+logingtot<-geih_e$logingtot 
 #justificación: Se escoge la variable ingtot pues está teniendo en cuenta tanto valores observados para el ingreso como valores imputados. Se tiene en cuenta el ingreso laboral, ingresos de otras fuentes (como arriendos) e ingresos que debería tener de acuerdo con las características observadas.  
 #Se asume que el DANE hace un ejercicio confiable en la imputación al ser una fuente confiable. 
 
+##obtenemos estadísticas descriptivas de las variables seleccionadas
+#NOTA: HARÍA FALTA EXP_POTENCIAL
+subset2 <- geih_e %>% select(age, sex, maxEducLevel, formal, dpto, oficio)
+skim(subset2)
+
 ##Distribución en densidad de ingreso
-d <- ggplot(geih18e, aes(x=logingtot)) + 
+d <- ggplot(geih_e, aes(x=logingtot)) + 
   geom_density()
 d+ geom_vline(aes(xintercept=mean(logingtot)),
               color="blue", linetype="dashed", size=1)
 
 
 #Podemos ver como está distribuido el ingreso de acuerdo con el genero de la persona encuestada. Podemos ver de forma muy introductoria que se presentan outliers.  
-ggplot(data = geih18e , mapping = aes(x = age , y = logingtot))+
+ggplot(data = geih_e , mapping = aes(x = age , y = logingtot))+
   geom_point(col = "tomato" , size = 0.5)
 
-p <- ggplot(data=geih18e) + 
+p <- ggplot(data=geih_e) + 
   geom_histogram(bins=30, mapping = aes(x=logingtot , group=as.factor(gen) , fill=as.factor(gen)))
   
 p + scale_fill_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
 
-box_plot <- ggplot(data=geih18e , mapping = aes(as.factor(educ_time) , ing)) + 
+box_plot <- ggplot(data=geih_e , mapping = aes(as.factor(educ_time) , logingtot)) + 
   geom_boxplot() + geom_point(aes(colour=as.factor(gen))) +
   scale_color_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
 box_plot
 ##Creo que se puede diferenciar mejor en el boxplot y en el geom_point creo que con solo una estaría bien. 
 
 #En este histograma podemos ver la distribucion del nivel de educacion maximo de la muestra diferenciado por el genero de los encuestados. 
-ggplot(geih18e, aes(x= educ_time)) + geom_bar(width=0.5, colour="blue", fill="steelblue") +  
+ggplot(geih_e, aes(x= educ_time)) + geom_bar(width=0.5, colour="blue", fill="steelblue") +  
   geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=5.0)+  
-  facet_wrap(~sex)
+  facet_wrap(~gen)
 
 
 #simetría de la variable ingreso: 
-BoxCoxTrans(geih18e$ing)
+BoxCoxTrans(geih_e$ing)
 
 #Pendiente completar pero en general es cacharrearle, ya no necesita concatenaci?n
 #?tiles: clase del 11 de junio y Intro_to_R (bloque ne?n)
@@ -397,7 +406,7 @@ head(geih_f$logingtot)
 summary(geih_f$ingtot)
 summary(geih_f$logingtot)
 
-ols2<-lm(geih_f$logingtot~geih_f$fem) #Regresi�n propuesta en el taller
+ols2<-lm(geih_f$logingtot~geih_f$fem) #Regresi?n propuesta en el taller
 ols2
 summary(ols2) #R^2 0.009
 require("stargazer")
@@ -525,16 +534,77 @@ alpha #Esto es lo mismo que nos da en la regresi?n, o sea estamos probando varia
 #####################
 # 5. Predicting earnings
 #####################
-
+require("fabricatr")
 
 # a. dos muestras (train y test) - plantear modelos cada vez m?s complejos (5) e irlos comparando
 
+###TODAVÍA NO FUNCIONA, SOLO ES EL CODIGO DE LA CLASE 
+geih_pe<-geih18e
+set.seed(123)
+#transormar el ingreso de logaritmo al ingreso estandar  y se genera un indicador lógico que divida la muestra en train y test. Si esta dentro del 30% verdadero, si no falso
+geih_pe <- geih_pe %>% 
+                  mutate (ing=exp(logingtot), 
+                          holdout=as.logical(1:nrow(geih_pe) %in%
+                                               sample(nrow(geih_pe), nrow(geih_pe)*.3))
+                  )
+
+#Definir las submuestras test y train
+#podemos utilizar una muestra para entrenar y una para evaluar 
+
+test <-geih_pe[geih_pe$holdout==T,]
+train <-geih_pe[geih_pe$holdout==T,]
+
+#i. modelo que solo incluye una constante: 
+model1<-lm(ing~1,data=train)
+summary (model1)
+
+#Vamos a predecir FUERA de muestra
+test$model1<-predict(model1,newdata=test)
+with (test, mean((ing-model1)^2))
+
+#ii.Incluir variables que lo complejisan:
+
+#model#<-lm(ing~educ_time+exp_potencial+poly(exp_potencial,3)+gen+gen:tipo_oficio+depto) aquí faltaría la de hijos
+#incluir del punto anterior
+
+#iv.ggplot que compare los MRE en los 5 modelos
+
+#v. 
+
+
 #para el peor modelo, buscar outliers
+
+
+##Este para MRE: 
+GIH<-data.frame(age=runif(30,18,80))
+GIH<- GIH %>% mutate(age2=age^2,
+                     income=rnorm(30,mean=12+0.06*age-0.001*age2))                
+
+for(i 1:dim(GIH)[1]){
+  #Estimate the regression model using all but the i − th observation
+  reg_1<-lm(income~age+age2,GIH[-i,])
+  #Calculate the prediction error for the i − th observation, i.e. (yi − yˆi)
+  y_hat<-predict(reg_1,newdata=GIH[i,])
+  u<-(GIH[i,]$income-y_hat)^2
+}
 
 
 
 #b. repetir usando k-fold
 
+N<-1000
+GIH<-data.frame(age=runif(N,18,80))
+GIH<- GIH %>% mutate(age2=age^2,
+                     income=rnorm(N,mean=12+0.06*age-0.001*age2))                
+
+
+
+model1<-train(income~.,                                                     # model to fit
+              data = GIH,
+              trControl = trainControl(method = "cv", number = 5),     # Method: crossvalidation, 5 folds
+              method = "null")                                            # specifying regression model
+
+model1
 
 #c. repetir usando LOOCV pero solo con un modelo de los 5 planteados
 
