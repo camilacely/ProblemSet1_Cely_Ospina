@@ -294,9 +294,16 @@ ggplot(geih_e, aes(x= educ_time)) + geom_bar(width=2, colour="steelblue", fill="
   facet_wrap(~fem)  
 
 #En este histograma podemos ver la distribucion del logaritmo del ingreso contra el estrato de las observaciones de la muestra diferenciado por el genero de los encuestados. 
-ggplot(geih_e, aes(x= estrato)) + geom_bar(width=2, colour="steelblue", fill="steelblue1") +  
-  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=2.5)+  #le cambie el tama�o de la letra para mejor comprension
+ggplot(geih_e, aes(x= estrato)) + geom_bar(width=0.5, colour="tomato", fill="steelblue1") +  
+  geom_text(aes(label=..count..), stat='count',position=position_dodge(0.9), vjust=-0.5,  size=2.5)+  #le cambie el tama?o de la letra para mejor comprension
   facet_wrap(~fem)
+
+box_plot <- ggplot(data=geih_e , mapping = aes(as.factor(estrato) , logingtot)) + 
+  geom_boxplot() + geom_point(aes(colour=as.factor(fem))) +
+  scale_color_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
+box_plot
+
+#No se si se vea mejor en un boxplot
 
 
 #####################
@@ -642,8 +649,8 @@ upper2m<-b2m+1.96*5.953093e-05 # -0.000571278
 peak_agelm<--(lowerm/(2*lower2m)) # 35.4083
 peak_ageum<--(upperm/(2*upper2m)) # 66.58934
 
-#peak mujeres= entre 22 y 86 a�os
-#peak hombres= entre 35 y 66 a�os
+#peak mujeres= entre 22 y 86 a?os
+#peak hombres= entre 35 y 66 a?os
 
 #notamos que los intervalos de hombres y de mujeres si tienen overlap,
 #en todo caso la edad peak de mujeres continua siendo menor que la de hombres
@@ -692,7 +699,6 @@ summary(ols7) #r^2 aumenta a 0.44 y la variable de estrato es significativa
 stargazer(ols7)
 
 
-        
 #Use FWL to repeat the above estimation, where the interest lies on b2 
 
 ##########
@@ -778,7 +784,8 @@ require("fabricatr")
 # a. dos muestras (train y test) - plantear modelos cada vez m?s complejos (5) e irlos comparando
 
 ###TODAVÍA NO FUNCIONA, SOLO ES EL CODIGO DE LA CLASE 
-geih_pe<-geih18e
+geih_pe<-geih_e
+#Semilla para siempre obtener los mismos resultados
 set.seed(123)
 #transormar el ingreso de logaritmo al ingreso estandar  y se genera un indicador lógico que divida la muestra en train y test. Si esta dentro del 30% verdadero, si no falso
 geih_pe <- geih_pe %>% 
@@ -793,28 +800,32 @@ geih_pe <- geih_pe %>%
 test <-geih_pe[geih_pe$holdout==T,]
 train <-geih_pe[geih_pe$holdout==F,]
 
-#i. modelo que solo incluye una constante: 
+#i. modelo que solo incluye una constante: Intercepto - media de los ingtot de las observaciones 
 model1<-lm(ing~1,data=train)
-summary (model1)
+stargazer(model1, type ="text")
 
 
 #ii. Estimar los modelos del punto anterior
 
 #NO ESTOY SEGURA PERO CREO QUE SON ESAS
-#ols1<-lm(geih_e$ingtot~geih_e$age+geih_e$age2)
-#ols2<-lm(geih_e$logingtot~geih_e$fem
-#ols3<-lm(logingtot~age+age2+fem,geih_f) #continua siendo coeficiente fem negativo
+Modeledad<-lm(geih_e$ingtot~geih_e$age+geih_e$age2) #Modelo de Age eargnings profile 
+Modelgen<-lm(geih_e$logingtot~geih_e$fem
+Modelgap<-logingtot~age+age2+fem
+
+
+#ols2<-
+#ols3<-lm(,geih_f) #continua siendo coeficiente fem negativo
 #ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
 #ols5<-lm(logingtot~age+age2+fem+oficio,geih_f)
 
 
 #iii.Incluir variables que lo complejisen transformando las X:
 
-model2<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+gen+estrato) 
-model3<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+estrato) 
-model4<-lm(geih_pe$logingtot~educ_time+exp_potencial+poly(exp_potencial,2)+age+age2+gen+estrato) 
-model5<-lm(geih_pe$logingtot~educ_time+exp_potencial+poly(exp_potencial,2)+age+age2+gen+gen:tipo_oficio+estrato) 
-model6<-lm(geih_pe$logingtot~educ_time+exp_potencial+poly(exp_potencial,2)+age+age2+gen+estrato+gen:tipo_oficio+estrato+gen:estrato) 
+model2<-lm(logingtot~maxEducLevel+age+fem+estrato,geih_pe) 
+model3<-lm(geih_pe$logingtot~educ_time+#educ^2+age+age2+gen+estrato) 
+model4<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+estrato) 
+model5<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+gen:tipo_oficio+estrato) 
+model6<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+estrato+gen:tipo_oficio+estrato+gen:estrato) 
 
 #iv.Reportar y comparar los MSE de todos los modelos (para comparar un grafico sería muy explicativo)
 
@@ -864,17 +875,19 @@ GIH<- GIH %>% mutate(age2=age^2,
                      income=rnorm(N,mean=12+0.06*age-0.001*age2))                
 
 
-
-model1<-train(income~.,                                                     # model to fit
+# model to fit
+# Method: crossvalidation, 5 folds
+# specifying regression model
+model1<-train(income~.,                                                     
               data = GIH,
-              trControl = trainControl(method = "cv", number = 5),     # Method: crossvalidation, 5 folds
-              method = "null")                                            # specifying regression model
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "null")                                            
 
 model1
 
 #c. repetir usando LOOCV pero solo con un modelo de los 5 planteados
 
-for(i 1:dim(GIH)[1]){
+for(i in 1:dim(GIH)[1]){
   #Estimate the regression model using all but the i − th observation
   reg_1<-lm(income~age+age2,GIH[-i,])
   #Calculate the prediction error for the i − th observation, i.e. (yi − yˆi)
