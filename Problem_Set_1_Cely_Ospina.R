@@ -258,6 +258,8 @@ subset2 <- geih_e[which(geih_e$sex == 1 | geih_e$sex == 0 ),names(geih_e) %in% c
 
 skim(subset2)
 
+stargazer(subset2)
+
 #Adicionalmente, se creo la variable de experiencia potencial la cual se comporta de la siguiente forma: 
 
 summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
@@ -778,8 +780,8 @@ test <-geih_pe[geih_pe$holdout==T,]
 train <-geih_pe[geih_pe$holdout==F,]
 
 #i. modelo que solo incluye una constante: Intercepto - media de los ingtot de las observaciones 
-model1<-lm(ingtot~1,data=train)
-stargazer(model1, type ="text")
+model1<-lm(logingtot~1,data=train)
+stargazer(model1)
 
 
 #ii. Estimar los modelos del punto anterior
@@ -792,7 +794,7 @@ model3<-lm(logingtot~fem, data=train)
 #Modelo age + gap
 model4<-lm(logingtot~fem+age+poly(age, 2) , data=train)
 
-stargazer(model1, model2, model3, model4, type = "text")
+stargazer(model1, model2, model3, model4)
 
 #iii.Incluir variables que lo complejisen transformando las X:
 
@@ -802,7 +804,7 @@ model7<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1,
 model8<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1+fem*oficio, data=train) 
 model9<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1+fem*oficio+fem*estrato1, data=train) 
 
-stargazer(model5 , model6 , model7 , model8 , model9, type="text")
+stargazer(model5 , model6 , model7 , model8 , model9)
 
 
 #iv.Reportar y comparar los MSE de todos los modelos (para comparar un grafico sería muy explicativo)
@@ -858,11 +860,8 @@ for (j in 1:nrow(test)) {
   hjs <- c(hjs, hj)
 }
 
-alpha
-alphas
-ggplot(test, aes(x=alphas, y=logingtot))+
-  geom_point(color="red")+
-  theme_classic()
+
+
 
 
 
@@ -914,7 +913,7 @@ model9cv<-train(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estr
               trControl = trainControl(method = "cv", number = 5),     
               method = "lm")
 
-model2cv
+model2cv 
 model3cv
 model4cv
 model5cv
@@ -949,7 +948,7 @@ for (i in 1:nrow(geih_pe)) {
   #Modelo fuera de muestra
   testLOOCV$model_9LOOCV<-predict(model8LOOCV,newdata = testLOOCV)
   #MSE
-  geih_pe$MSE_LOOCV[i]<-with(testLOOCV,mean((logingtot-model8LOOCV)^2))
+  geih_pe$MSE_LOOCV[i]<-with(testLOOCV,mean((logingtot-model8LOOCV))^2)
 }
 mean(geih_pe$MSE_LOOCV)
 
