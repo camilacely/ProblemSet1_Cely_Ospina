@@ -709,7 +709,7 @@ ggplot(geih_e) +
 
 #recordar que este es el modelo que solo incluye el coeficiente de fem
 #ols2<-lm(geih_e$logingtot~geih_e$fem)
-summary(ols2) #coeficiente -0.193
+summary(ols2) #coeficiente original -0.193
 
 ### Ahora lo que vamos es hacer probar el FWL Theorem
 
@@ -736,6 +736,22 @@ stargazer(ols2,ols8,ols9,type="text") #y aqu? vemos que el B es el mismo! o sea 
 #En el modelo de residuales en residuales vemos que el coeficiente no cambia (continua siendo -0.226)
 #pero el r^2 aumenta de 0.012 a 0.021, el modelo ajusta mejor
 #este mejor ajuste estaria indicando que el problema no es de seleccion y que efectivamente hay un gap de income para las mujeres
+
+#se puede complejizar
+
+ols10<-lm(logingtot~fem+age+age2+estrato,geih_e)
+summary(ols10) #coeficiente -0.24 
+stargazer(ols2,ols10,type="text") #vemos los dos modelos lado a lado, comparamos coeficiente de fem
+
+#regresion de residuales en residuales
+
+geih_fwl2<-geih_e %>% mutate(res_y_e=lm(logingtot~age+age2+estrato,geih_e)$residuals,
+                            res_x_e=lm(fem~age+age2+estrato,geih_e)$residuals,
+)
+ols11<-lm(res_y_e~res_x_e,geih_fwl2) #y luego se corren los residuales de y contra los de x
+stargazer(ols2,ols10,ols11,type="text") #y aqu? vemos que el B es el mismo! o sea que "eliminamos" estrato
+
+#efectivamente el coeficiente de fem en el modelo de resid en resid da -0.24 y asi mismo el r^2 aumenta
 
 
 #####################
