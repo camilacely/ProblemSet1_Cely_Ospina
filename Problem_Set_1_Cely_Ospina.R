@@ -258,6 +258,8 @@ subset2 <- geih_e[which(geih_e$sex == 1 | geih_e$sex == 0 ),names(geih_e) %in% c
 
 skim(subset2)
 
+stargazer(subset2)
+
 #Adicionalmente, se creo la variable de experiencia potencial la cual se comporta de la siguiente forma: 
 
 summary(exp_potencial) #en promedio, las personas encuestadas tienen 22 a?os de experiencia laboral
@@ -770,8 +772,7 @@ geih_pe<-geih_e
 set.seed(123)
 #transormar el ingreso de logaritmo al ingreso estandar  y se genera un indicador lógico que divida la muestra en train y test. Si esta dentro del 30% verdadero, si no falso
 geih_pe <- geih_pe %>% 
-                  mutate (ing=exp(logingtot), 
-                  holdout=as.logical(1:nrow(geih_pe) %in%
+                  mutate (holdout=as.logical(1:nrow(geih_pe) %in%
                   sample(nrow(geih_pe), nrow(geih_pe)*.3))
                   )
 
@@ -782,89 +783,150 @@ test <-geih_pe[geih_pe$holdout==T,]
 train <-geih_pe[geih_pe$holdout==F,]
 
 #i. modelo que solo incluye una constante: Intercepto - media de los ingtot de las observaciones 
-model1<-lm(ing~1,data=train)
-stargazer(model1, type ="text")
+model1<-lm(logingtot~1,data=train)
+stargazer(model1)
 
 
 #ii. Estimar los modelos del punto anterior
 
-#NO ESTOY SEGURA PERO CREO QUE SON ESAS
-Modeledad<-lm(geih_e$ingtot~geih_e$age+geih_e$age2) #Modelo de Age eargnings profile 
-Modelgen<-lm(geih_e$logingtot~geih_e$fem
-Modelgap<-logingtot~age+age2+fem
+#se estiman los modelos de perfil de ganancias por edad, el de efecto de ser mujer y el que incluye ambos. 
+#Modelo de Age eargnings profile 
+model2<-lm(logingtot~age+poly(age, 2), data=train) 
+#Modelo earnings gap
+model3<-lm(logingtot~fem, data=train)
+#Modelo age + gap
+model4<-lm(logingtot~fem+age+poly(age, 2) , data=train)
 
-
-#ols2<-
-#ols3<-lm(,geih_f) #continua siendo coeficiente fem negativo
-#ols4<-lm(logingtot~age+age2+sex,geih_f) #estas dos regresiones dan lo mismo, solo que para fem el coeficiente es negativo y para sex positivo
-#ols5<-lm(logingtot~age+age2+fem+oficio,geih_f)
-
+stargazer(model1, model2, model3, model4)
 
 #iii.Incluir variables que lo complejisen transformando las X:
 
-model2<-lm(logingtot~maxEducLevel+age+fem+estrato,geih_pe) 
-model3<-lm(geih_pe$logingtot~educ_time+#educ^2+age+age2+gen+estrato) 
-model4<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+estrato) 
-model5<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+gen:tipo_oficio+estrato) 
-model6<-lm(geih_pe$logingtot~educ_time+exp_potencial+age+age2+gen+estrato+gen:tipo_oficio+estrato+gen:estrato) 
+model5<-lm(logingtot~fem+age+maxEducLevel+estrato1, data=train) 
+model6<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1, data=train)
+model7<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1, data=train)
+model8<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1+fem*oficio, data=train) 
+model9<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1+fem*oficio+fem*estrato1, data=train) 
+
+stargazer(model5 , model6 , model7 , model8 , model9)
+
 
 #iv.Reportar y comparar los MSE de todos los modelos (para comparar un grafico sería muy explicativo)
 
-#Vamos a predecir FUERA de muestra
-test$model1<-predict(model1,newdata=test)
-with (test, mean((ing-model1)^2))
+#sacamos los modelos fuera de muestra y el MSE para cada uno de los modelos: 
+test$model1<-predict(model1,newdata = test)
+mse1<-with (test, mean((logingtot-model1)^2))
 
-test$model2<-predict(model1,newdata=test)
-with (test, mean((ing-model2)^2))
+test$model2<-predict(model2,newdata=test)
+mse2<-with (test, mean((logingtot-model2)^2))
 
-test$model3<-predict(model1,newdata=test)
-with (test, mean((ing-model3)^2))
+test$model3<-predict(model3,newdata=test)
+mse3<-with (test, mean((logingtot-model3)^2))
 
-test$model4<-predict(model1,newdata=test)
-with (test, mean((ing-model4)^2))
+test$model4<-predict(model4,newdata=test)
+mse4<-with (test, mean((logingtot-model4)^2))
 
-test$model5<-predict(model1,newdata=test)
-with (test, mean((ing-model5)^2))
+test$model5<-predict(model5,newdata=test)
+mse5<-with (test, mean((logingtot-model5)^2))
 
-test$model6<-predict(model1,newdata=test)
-with (test, mean((ing-model6)^2))
+test$model6<-predict(model6,newdata=test)
+mse6<-with (test, mean((logingtot-model6)^2))
+
+test$model7<-predict(model7,newdata=test)
+mse7<-with (test, mean((logingtot-model7)^2))
+
+test$model8<-predict(model8,newdata=test)
+mse8<-with (test, mean((logingtot-model8)^2))
+
+test$model9<-predict(model9,newdata=test)
+mse9<-with (test, mean((logingtot-model9)^2))
+
+allmse<-c(mse1,mse2,mse3,mse4,mse5,mse6,mse7,mse8,mse9)
+
+allmse1<-ggplot(test = aes(x=1:9, y=allmse))+
+  geom_line(aes(colour=variable))
+
+ggplot(data = test, aes(x=1:9, y=allmse)) + geom_line(aes(colour="tomato"))
+
+comp + scale_fill_manual(values = c("0"="tomato" , "1"="steelblue") , label = c("0"="Hombre" , "1"="Mujer") , name = "Genero")
+
+
+# #v. #para el peor modelo, buscar outliers >> LUCAS
+ujs<-c()
+hjs<-c()
+alphas <- c()
+for (j in 1:nrow(test)) {
+  uj <- model9$residual[j]
+  hj <- lm.influence(model9)$hat[j]
+  alpha <- uj/(1-hj)
+  alphas <- c(alphas, alpha)
+  ujs <- c(ujs, uj)
+  hjs <- c(hjs, hj)
+}
 
 
 
-##FALTARÍAN LOS DEL PUNTO ii
-
-
-
-#v. 
-
-
-#para el peor modelo, buscar outliers
-
-
-##Este para MRE: 
-GIH<-data.frame(age=runif(30,18,80))
-GIH<- GIH %>% mutate(age2=age^2,
-                     income=rnorm(30,mean=12+0.06*age-0.001*age2))                
 
 
 
 #b. repetir usando k-fold
 
-N<-1000
-GIH<-data.frame(age=runif(N,18,80))
-GIH<- GIH %>% mutate(age2=age^2,
-                     income=rnorm(N,mean=12+0.06*age-0.001*age2))                
-
-
-# model to fit
-# Method: crossvalidation, 5 folds
-# specifying regression model
-model1<-train(income~.,                                                     
-              data = GIH,
+model1cv<-train(logingtot~1, 
+              data = geih_pe,
+              na.action=na.exclude,
               trControl = trainControl(method = "cv", number = 5),     
-              method = "null")                                            
+              method = "null")  
+model2cv<-train(logingtot~age+poly(age, 2), 
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm") 
+model3cv<-train(logingtot~fem,
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm") 
+model4cv<-train(logingtot~fem+age+poly(age, 2),  
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm") 
+model5cv<-train(logingtot~fem+age+maxEducLevel+estrato1,                                                     
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm") 
+model6cv<-train(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1,                                                     
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm") 
+model7cv<-train(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1,                                                    
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm")
+model8cv<-train(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1+fem*oficio,                                                     
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm")
+model9cv<-train(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1+fem*oficio+fem*estrato1,                                                      
+              data = geih_pe,
+              na.action=na.exclude,
+              trControl = trainControl(method = "cv", number = 5),     
+              method = "lm")
 
-model1
+model2cv 
+model3cv
+model4cv
+model5cv
+model6cv
+model7cv
+model8cv
+model9cv
+
+#El modelo 8 es el que tiene el MSE mas pequeño en este caso, se conía en el ejercicio econometrico que adelanta el programa al encontrar el mejor lamda para esta ecuación
+
 
 #c. repetir usando LOOCV pero solo con un modelo de los 5 planteados
 
@@ -877,6 +939,21 @@ for(i in 1:dim(GIH)[1]){
 }
 
 
+geih_pe$MSE_LOOCV <- 1
+for (i in 1:nrow(geih_pe)) {
+  #Establecer base en LOOCV
+  trainLOOCV<-geih_pe[-c(i),]
+  dim(trainLOOCV)
+  testLOOCV<-geih_pe[c(i),]
+  dim(trainLOOCV)
+  #Modelo entrenamiento
+  model8LOOCV<-lm(logingtot~fem+age+poly(age, 2)+maxEducLevel+estrato1+oficio+estrato1+fem*oficio,data = trainLOOCV)
+  #Modelo fuera de muestra
+  testLOOCV$model_9LOOCV<-predict(model8LOOCV,newdata = testLOOCV)
+  #MSE
+  geih_pe$MSE_LOOCV[i]<-with(testLOOCV,mean((logingtot-model8LOOCV))^2)
+}
+mean(geih_pe$MSE_LOOCV)
 
 
 
