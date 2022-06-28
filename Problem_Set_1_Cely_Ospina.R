@@ -688,86 +688,47 @@ stargazer(ols6)
 ols7<-lm(logingtot~fem+age+age2+maxEducLevel+oficio+formal+estrato,geih_e)
 summary(ols7) #r^2 aumenta a 0.44 y la variable de estrato es significativa
 #nota: hay que tener cuidado porque estrato podria ser una variable endogena (menor ingreso lleva a elegir menor estrato de residencia)
-#sin embargo vivir en barrios de menores estratos puede estar generando dificultad de acceso a trabajos mejor pagos
+#sin embargo vivir en barrios de menores estratos puede estar generando dificultad de acceso a trabajos mejor pagos, por lo tanto afectando el ingreso
 stargazer(ols7)
 
 
-        
 #Use FWL to repeat the above estimation, where the interest lies on b2 
 
-##########
-##VOY A PEGAR AQU? MI SCRIPT COMENTADO DE JUNIO 8 DONDE NOS EXPLICARON COMO SACAR EL FWL THEOREM
-#######
-########pendiente corregir las variables
+#Sacamos un plot rapido de los datos (no es necesario en este caso pero guardo el script)
+ggplot(geih_e) +
+  geom_point(aes(x=age,y=logingtot))
 
-ggplot(db) +
-  geom_point(aes(x=x,y=y))
-#esto nos saca un plot de los datos, aes quiere decir aesthetic, ah? ponemos que va en cada eje
+#lo voy a correr primero solo con la de age, age2 y fem
 
-reg1<-lm(y~x,data=db)
-summary(reg1)
-#regresi?n lineal
-
-
-require("stargazer")
-stargazer(reg1,type="text")
-#Esto es parecido a outreg, la salida es mas parecida a las comunes en econom?a 
-
+#recordar que este es el modelo que solo incluye el coeficiente de fem
+#ols2<-lm(geih_e$logingtot~geih_e$fem)
+summary(ols2) #coeficiente -0.193
 
 ### Ahora lo que vamos es hacer probar el FWL Theorem
 
-#Primero "a mano"
-#Crear dummy
-db<- db %>% mutate(ej=c(rep(0,30),1)) #Esto crea un valor de 1 en la posici?n 31, donde sabemos que est? el outlier
-head(db)
-tail(db)
 
-#regresi?n que incluye la dummy
-reg2<-lm(y~x+ej,db)
+#Modelo a probar
+#Notamos en el analisis anterior que la variable estrato pesa bastante en la especificacion del modelo
+#probemos con esta variable de control
 
-#Aqu? vemos los resultados de reg1 y reg2
-stargazer(reg1,reg2,type="text")
+ols8<-lm(logingtot~fem+estrato,geih_e)
+summary(ols8) #coeficiente -0.226
 
-## Entonces lo que vemos es que poner la dummy para ESA OBSERVACI?N hace que la "desaparezcamos"
 
-#Ahora lo que vamos a analizar es la regresi?n de residuales en residuales - FWL Theorem ahora s?
+stargazer(ols2,ols8,type="text") #vemos los dos modelos lado a lado, comparamos coeficiente de fem
 
-##Creamos los residuales
+#regresion de residuales en residuales
 
-#Correr y contra ej y luego x contra ej, llamar los residuales de cada regresi?n
-db<-db %>% mutate(res_y_e=lm(y~ej,db)$residuals,
-                  res_x_e=lm(x~ej,db)$residuals,
+geih_fwl<-geih_e %>% mutate(res_y_e=lm(logingtot~estrato,geih_e)$residuals,
+                  res_x_e=lm(fem~estrato,geih_e)$residuals,
 )
-reg3<-lm(res_y_e~res_x_e,db) #y luego se corren los residuales de y contra los de x
-stargazer(reg1,reg2,reg3,type="text") #y aqu? vemos que el B es el mismo de cuando lo hicimos a mano!
+ols9<-lm(res_y_e~res_x_e,geih_fwl) #y luego se corren los residuales de y contra los de x
+stargazer(ols2,ols8,ols9,type="text") #y aqu? vemos que el B es el mismo! o sea que "eliminamos" estrato
 
 
-
-## AHORA : leverage (ser? una cuarta regresi?n)
-
-db<-db %>% mutate(res_y_x=lm(y~x,db)$residuals, #Aqu? sacamos los residuales de y contra x
-                  res_e_x=lm(ej~x,db)$residuals, #y luego los de ej contra x
-)
-reg4<-lm(res_y_x~res_e_x,db) #y corremos esas dos cosas
-stargazer(reg1,reg2,reg3,reg4,type="text") #y aqu? vemos que nos da el "PESO" (leverage), o sea cuanto me est? tirando esa observaci?n en los datos, que es el mismo B de la variable dummy que habiamos creado
-
-
-##Calcular alfa a mano
-
-u<-lm(y~x,data=db)$residual[31]
-u
-
-h<-lm.influence(reg1)$hat[31]
-h
-
-alpha<-u/(1-h)
-alpha #Esto es lo mismo que nos da en la regresi?n, o sea estamos probando varias maneras de sacar lo mismo
-
-#El FWL Theorem se cumple siempre porque es una propiedad num?rica, no estad?stica
-
-#Podr?amos por ejemplo comparar el leverage entre esa observaci?n, la 31, y otra normalita, por decir la 29. El leverage, entre m?s cerca est?n a la media de x, va a ser menor.
-
-
+#En el modelo de residuales en residuales vemos que el coeficiente no cambia (continua siendo -0.226)
+#pero el r^2 aumenta de 0.012 a 0.021, el modelo ajusta mejor
+#este mejor ajuste estaria indicando que el problema no es de seleccion y que efectivamente hay un gap de income para las mujeres
 
 
 #####################
